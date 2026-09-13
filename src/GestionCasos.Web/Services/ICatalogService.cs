@@ -30,9 +30,13 @@ public interface ICatalogService
     void UpdateResolverGroup(int id, string name, List<int> memberUserIds, bool isHelpDesk);
     void DeleteResolverGroup(int id);
 
-    List<AppUser> GetUsers(UserProfileType? profileType = null, int? countryId = null);
+    /// <summary>Por defecto sólo devuelve usuarios activos; <paramref name="includeInactive"/> trae también los dados de baja.</summary>
+    List<AppUser> GetUsers(UserProfileType? profileType = null, int? countryId = null, bool includeInactive = false);
     AppUser? GetUser(int id);
     AppUser CreateUser(AppUser user);
     void UpdateUser(AppUser user);
-    void DeleteUser(int id);
+
+    /// <summary>Baja lógica: desactiva al usuario y lo desasocia de todos sus grupos resolutores.</summary>
+    void DeactivateUser(int id);
+    void ReactivateUser(int id);
 }

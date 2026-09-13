@@ -157,6 +157,17 @@ public class InMemoryDataStore
         // --- Casos de ejemplo (para poder ver la bandeja y las métricas con datos) ---
         var now = DateTime.UtcNow;
 
+        // --- Historial de alta / membresía a grupos, para poder ver el historial de cada usuario ---
+        foreach (var user in Users)
+        {
+            var createdAt = now.AddDays(user.ProfileType == UserProfileType.Cliente ? -90 : -120);
+            user.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.Created, OccurredAtUtc = createdAt });
+            foreach (var groupId in user.ResolverGroupIds)
+            {
+                user.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.AddedToGroup, OccurredAtUtc = createdAt.AddDays(1), ResolverGroupId = groupId });
+            }
+        }
+
         var casoProvidencia = AddSeedCase(chileId, "CL", lider.Id, brLiderProvidencia.Id, CaseType.Reclamo,
             "El lector de tarjetas de la caja 3 no funciona desde ayer.", clienteCl1.Id,
             now.AddDays(-6),

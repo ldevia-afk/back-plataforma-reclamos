@@ -1,42 +1,87 @@
 @model List<AppUser>
 @{
     ViewData["Title"] = "Usuarios";
+    var clientNamesByUserId = (Dictionary<int, string>)ViewBag.ClientNamesByUserId;
+    var groupNamesByUserId = (Dictionary<int, string>)ViewBag.GroupNamesByUserId;
 }
 <h1>Usuarios</h1>
 
 <a class="gc-btn" asp-controller="Users" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo usuario</a>
 
+<div class="gc-form-group" style="max-width:360px;">
+    <input id="user-search" class="gc-input" type="search" placeholder="Buscar por nombre, email, país, alcance o grupo..." />
+</div>
+
 <div class="gc-card">
-    <table class="gc-table">
-        <thead><tr><th>Nombre</th><th>Email</th><th>Perfil</th><th>País</th><th>Alcance</th><th></th></tr></thead>
+    <table class="gc-table" id="users-table">
+        <thead><tr><th>Nombre</th><th>Email</th><th>Perfil</th><th>País</th><th>Alcance</th><th>Estado</th><th></th></tr></thead>
         <tbody>
             @foreach (var user in Model)
             {
-                <tr>
+                var profileDisplay = user.ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno";
+                var countryName = (string)ViewBag.CountryNames[user.CountryId];
+                var scopeDisplay = user.ProfileType == UserProfileType.Cliente
+                    ? clientNamesByUserId[user.Id]
+                    : (user.HasAllBranches ? "Todas las sucursales" : $"{user.AssignedBranchIds.Count} sucursal(es)");
+                var groupNames = groupNamesByUserId[user.Id];
+                var statusDisplay = user.IsActive ? "Activo" : "Inactivo";
+                var searchText = string.Join(" ", new[] { user.Name, user.Email, profileDisplay, countryName, scopeDisplay, groupNames, statusDisplay }).ToLowerInvariant();
+
+                <tr data-search="@searchText">
                     <td>@user.Name</td>
                     <td>@user.Email</td>
-                    <td>@(user.ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno")</td>
-                    <td>@ViewBag.CountryNames[user.CountryId]</td>
+                    <td>@profileDisplay</td>
+                    <td>@countryName</td>
                     <td>
-                        @if (user.ProfileType == UserProfileType.Cliente)
+                        @scopeDisplay
+                        @if (!string.IsNullOrEmpty(groupNames))
                         {
-                            @user.AssignedClientIds.Count <text> cliente(s)</text>
+                            <div class="gc-hint">Grupos: @groupNames</div>
+                        }
+                    </td>
+                    <td><span class="gc-status @(user.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@statusDisplay</span></td>
+                    <td>
+                        <a asp-controller="Users" asp-action="Details" asp-route-id="@user.Id">Ver</a>
+                        &nbsp;·&nbsp;
+                        <a asp-controller="Users" asp-action="Edit" asp-route-id="@user.Id">Editar</a>
+                        &nbsp;·&nbsp;
+                        @if (user.IsActive)
+                        {
+                            <form asp-controller="Users" asp-action="Deactivate" asp-route-id="@user.Id" method="post" class="gc-inline-form">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="gc-link-button">Dar de baja</button>
+                            </form>
                         }
                         else
                         {
-                            @(user.HasAllBranches ? "Todas las sucursales" : $"{user.AssignedBranchIds.Count} sucursal(es)")
+                            <form asp-controller="Users" asp-action="Reactivate" asp-route-id="@user.Id" method="post" class="gc-inline-form">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="gc-link-button">Reactivar</button>
+                            </form>
                         }
-                    </td>
-                    <td>
-                        <a asp-controller="Users" asp-action="Edit" asp-route-id="@user.Id">Editar</a>
-                        &nbsp;·&nbsp;
-                        <form asp-controller="Users" asp-action="Delete" asp-route-id="@user.Id" method="post" class="gc-inline-form">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="gc-link-button">Eliminar</button>
-                        </form>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
+    <p id="no-results-hint" class="gc-hint" hidden>Ningún usuario coincide con la búsqueda.</p>
 </div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var input = document.getElementById("user-search");
+        var rows = document.querySelectorAll("#users-table tbody tr");
+        var noResults = document.getElementById("no-results-hint");
+
+        input.addEventListener("input", function () {
+            var query = input.value.trim().toLowerCase();
+            var visibleCount = 0;
+            rows.forEach(function (row) {
+                var match = row.getAttribute("data-search").indexOf(query) !== -1;
+                row.hidden = !match;
+                if (match) visibleCount++;
+            });
+            noResults.hidden = visibleCount !== 0;
+        });
+    });
+</script>

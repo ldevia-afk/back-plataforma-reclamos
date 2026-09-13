@@ -238,11 +238,12 @@ public class CatalogService : ICatalogService
         }
     }
 
-    public List<AppUser> GetUsers(UserProfileType? profileType = null, int? countryId = null)
+    public List<AppUser> GetUsers(UserProfileType? profileType = null, int? countryId = null, bool includeInactive = false)
     {
         lock (_store.Lock)
         {
             var query = _store.Users.AsEnumerable();
+            if (!includeInactive) query = query.Where(u => u.IsActive);
             if (profileType.HasValue) query = query.Where(u => u.ProfileType == profileType.Value);
             if (countryId.HasValue) query = query.Where(u => u.CountryId == countryId.Value);
             return query.OrderBy(u => u.Name).ToList();
@@ -259,11 +260,16 @@ public class CatalogService : ICatalogService
         lock (_store.Lock)
         {
             user.Id = _store.NextUserId();
+            user.IsActive = true;
+            var now = DateTime.UtcNow;
+            user.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.Created, OccurredAtUtc = now });
+
             _store.Users.Add(user);
             foreach (var groupId in user.ResolverGroupIds)
             {
                 var group = _store.ResolverGroups.FirstOrDefault(g => g.Id == groupId);
                 if (group != null && !group.MemberUserIds.Contains(user.Id)) group.MemberUserIds.Add(user.Id);
+                user.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.AddedToGroup, OccurredAtUtc = now, ResolverGroupId = groupId });
             }
             return user;
         }
@@ -276,14 +282,17 @@ public class CatalogService : ICatalogService
             var existing = _store.Users.FirstOrDefault(u => u.Id == user.Id);
             if (existing == null) return;
 
+            var now = DateTime.UtcNow;
             foreach (var groupId in existing.ResolverGroupIds.Except(user.ResolverGroupIds).ToList())
             {
                 _store.ResolverGroups.FirstOrDefault(g => g.Id == groupId)?.MemberUserIds.Remove(user.Id);
+                existing.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.RemovedFromGroup, OccurredAtUtc = now, ResolverGroupId = groupId });
             }
             foreach (var groupId in user.ResolverGroupIds.Except(existing.ResolverGroupIds).ToList())
             {
                 var group = _store.ResolverGroups.FirstOrDefault(g => g.Id == groupId);
                 if (group != null && !group.MemberUserIds.Contains(user.Id)) group.MemberUserIds.Add(user.Id);
+                existing.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.AddedToGroup, OccurredAtUtc = now, ResolverGroupId = groupId });
             }
 
             existing.Name = user.Name;
@@ -297,15 +306,35 @@ public class CatalogService : ICatalogService
         }
     }
 
-    public void DeleteUser(int id)
+    public void DeactivateUser(int id)
     {
         lock (_store.Lock)
         {
-            _store.Users.RemoveAll(u => u.Id == id);
-            foreach (var group in _store.ResolverGroups)
+            var user = _store.Users.FirstOrDefault(u => u.Id == id);
+            if (user == null || !user.IsActive) return;
+
+            var now = DateTime.UtcNow;
+            foreach (var groupId in user.ResolverGroupIds.ToList())
             {
-                group.MemberUserIds.Remove(id);
+                _store.ResolverGroups.FirstOrDefault(g => g.Id == groupId)?.MemberUserIds.Remove(id);
+                user.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.RemovedFromGroup, OccurredAtUtc = now, ResolverGroupId = groupId });
             }
+            user.ResolverGroupIds = new List<int>();
+
+            user.IsActive = false;
+            user.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.Deactivated, OccurredAtUtc = now });
+        }
+    }
+
+    public void ReactivateUser(int id)
+    {
+        lock (_store.Lock)
+        {
+            var user = _store.Users.FirstOrDefault(u => u.Id == id);
+            if (user == null || user.IsActive) return;
+
+            user.IsActive = true;
+            user.History.Add(new UserHistoryEntry { Type = UserHistoryEventType.Reactivated, OccurredAtUtc = DateTime.UtcNow });
         }
     }
 }

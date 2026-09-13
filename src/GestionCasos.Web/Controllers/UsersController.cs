@@ -20,8 +20,53 @@ public class UsersController : GestionCasosControllerBase
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
+        var users = _catalogService.GetUsers(includeInactive: true);
+        var clients = _catalogService.GetClients();
+        var groups = _catalogService.GetResolverGroups();
+
         ViewBag.CountryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
-        return View(_catalogService.GetUsers());
+        ViewBag.ClientNamesByUserId = users.ToDictionary(
+            u => u.Id,
+            u => string.Join(", ", u.AssignedClientIds.Select(cid => clients.FirstOrDefault(c => c.Id == cid)?.Name).Where(n => n != null)));
+        ViewBag.GroupNamesByUserId = users.ToDictionary(
+            u => u.Id,
+            u => string.Join(", ", u.ResolverGroupIds.Select(gid => groups.FirstOrDefault(g => g.Id == gid)?.Name).Where(n => n != null)));
+
+        return View(users);
+    }
+
+    public IActionResult Details(int id)
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        var user = _catalogService.GetUser(id);
+        if (user == null) return NotFound();
+
+        var vm = new UserDetailViewModel
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            ProfileType = user.ProfileType,
+            CountryName = _catalogService.GetCountry(user.CountryId)?.Name ?? string.Empty,
+            IsActive = user.IsActive,
+            AssignedClientNames = user.AssignedClientIds.Select(cid => _catalogService.GetClient(cid)?.Name ?? "(cliente eliminado)").ToList(),
+            HasAllBranches = user.HasAllBranches,
+            AssignedBranchNames = user.AssignedBranchIds.Select(bid => _catalogService.GetBranch(bid)?.Name ?? "(sucursal eliminada)").ToList(),
+            ResolverGroupNames = user.ResolverGroupIds.Select(gid => _catalogService.GetResolverGroup(gid)?.Name ?? "(grupo eliminado)").ToList(),
+            History = user.History
+                .OrderBy(h => h.OccurredAtUtc)
+                .Select(h => new UserHistoryRow
+                {
+                    Type = h.Type,
+                    OccurredAtUtc = h.OccurredAtUtc,
+                    ResolverGroupName = h.ResolverGroupId.HasValue ? (_catalogService.GetResolverGroup(h.ResolverGroupId.Value)?.Name ?? "(grupo eliminado)") : null
+                })
+                .ToList()
+        };
+
+        return View(vm);
     }
 
     public IActionResult Create()
@@ -91,13 +136,25 @@ public class UsersController : GestionCasosControllerBase
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Delete(int id)
+    public IActionResult Deactivate(int id)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        _catalogService.DeleteUser(id);
-        TempData["Success"] = "Usuario eliminado.";
+        _catalogService.DeactivateUser(id);
+        TempData["Success"] = "Usuario dado de baja. Se desasoció de sus grupos resolutores.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Reactivate(int id)
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        _catalogService.ReactivateUser(id);
+        TempData["Success"] = "Usuario reactivado.";
         return RedirectToAction(nameof(Index));
     }
 

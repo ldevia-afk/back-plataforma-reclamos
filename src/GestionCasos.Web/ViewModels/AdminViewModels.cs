@@ -86,3 +86,37 @@ public class SwitchUserViewModel
     public List<AppUser> InternalUsers { get; set; } = new();
     public Dictionary<int, string> CountryNamesById { get; set; } = new();
 }
+
+public class UserDetailViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public UserProfileType ProfileType { get; set; }
+    public string CountryName { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+
+    public List<string> AssignedClientNames { get; set; } = new();
+    public bool HasAllBranches { get; set; }
+    public List<string> AssignedBranchNames { get; set; } = new();
+    public List<string> ResolverGroupNames { get; set; } = new();
+
+    public List<UserHistoryRow> History { get; set; } = new();
+}
+
+public class UserHistoryRow
+{
+    public UserHistoryEventType Type { get; set; }
+    public DateTime OccurredAtUtc { get; set; }
+    public string? ResolverGroupName { get; set; }
+
+    public string Description => Type switch
+    {
+        UserHistoryEventType.Created => "Alta del usuario",
+        UserHistoryEventType.Deactivated => "Baja del usuario",
+        UserHistoryEventType.Reactivated => "Reactivación del usuario",
+        UserHistoryEventType.AddedToGroup => $"Se agregó al grupo resolutor {ResolverGroupName}",
+        UserHistoryEventType.RemovedFromGroup => $"Dejó de pertenecer al grupo resolutor {ResolverGroupName}",
+        _ => Type.ToString()
+    };
+}

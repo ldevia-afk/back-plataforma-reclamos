@@ -1,0 +1,61 @@
+@model UserDetailViewModel
+@{
+    ViewData["Title"] = $"Usuario {Model.Name}";
+}
+<a asp-controller="Users" asp-action="Index">&larr; Volver a Usuarios</a>
+<h1>@Model.Name</h1>
+
+<div class="gc-card">
+    <table class="gc-table">
+        <tr><th style="width:180px;">Email</th><td>@Model.Email</td></tr>
+        <tr><th>Perfil</th><td>@(Model.ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno")</td></tr>
+        <tr><th>País</th><td>@Model.CountryName</td></tr>
+        <tr><th>Estado</th><td><span class="gc-status @(Model.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@(Model.IsActive ? "Activo" : "Inactivo")</span></td></tr>
+        @if (Model.ProfileType == UserProfileType.Cliente)
+        {
+            <tr><th>Clientes representados</th><td>@(Model.AssignedClientNames.Count > 0 ? string.Join(", ", Model.AssignedClientNames) : "Ninguno")</td></tr>
+        }
+        else
+        {
+            <tr><th>Sucursales</th><td>@(Model.HasAllBranches ? "Todas las sucursales del país" : (Model.AssignedBranchNames.Count > 0 ? string.Join(", ", Model.AssignedBranchNames) : "Ninguna"))</td></tr>
+            <tr><th>Grupos resolutores</th><td>@(Model.ResolverGroupNames.Count > 0 ? string.Join(", ", Model.ResolverGroupNames) : "Ninguno")</td></tr>
+        }
+    </table>
+
+    <div style="margin-top:16px;">
+        <a class="gc-btn" asp-controller="Users" asp-action="Edit" asp-route-id="@Model.Id">Editar</a>
+        @if (Model.IsActive)
+        {
+            <form asp-controller="Users" asp-action="Deactivate" asp-route-id="@Model.Id" method="post" class="gc-inline-form">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="gc-btn gc-btn-danger">Dar de baja</button>
+            </form>
+        }
+        else
+        {
+            <form asp-controller="Users" asp-action="Reactivate" asp-route-id="@Model.Id" method="post" class="gc-inline-form">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="gc-btn gc-btn-secondary">Reactivar</button>
+            </form>
+        }
+    </div>
+</div>
+
+<div class="gc-card">
+    <div class="gc-card-title">Historial</div>
+    @if (Model.History.Count == 0)
+    {
+        <p class="gc-hint">Todavía no hay eventos registrados.</p>
+    }
+    else
+    {
+        <ul class="gc-timeline">
+            @foreach (var h in Model.History)
+            {
+                <li>
+                    <strong>@h.Description</strong> — @h.OccurredAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                </li>
+            }
+        </ul>
+    }
+</div>

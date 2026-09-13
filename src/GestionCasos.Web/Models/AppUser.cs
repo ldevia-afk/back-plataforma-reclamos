@@ -25,4 +25,10 @@ public class AppUser
     public List<int> AssignedBranchIds { get; set; } = new();
     /// <summary>Grupos resolutores de los que este usuario interno es miembro.</summary>
     public List<int> ResolverGroupIds { get; set; } = new();
+
+    /// <summary>Baja lógica: un usuario inactivo no puede operar ni ser elegido en nuevas asignaciones.</summary>
+    public bool IsActive { get; set; } = true;
+
+    /// <summary>Historial de alta, baja y cambios de membresía en grupos resolutores.</summary>
+    public List<UserHistoryEntry> History { get; set; } = new();
 }
