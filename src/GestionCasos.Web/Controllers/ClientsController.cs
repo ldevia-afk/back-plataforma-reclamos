@@ -94,14 +94,14 @@ public class ClientsController : GestionCasosControllerBase
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult AddBranch(int clientId, string newBranchName)
+    public IActionResult AddBranch(int clientId, string newBranchName, string? newBranchAddress)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
         if (!string.IsNullOrWhiteSpace(newBranchName))
         {
-            _catalogService.CreateBranch(newBranchName.Trim(), clientId);
+            _catalogService.CreateBranch(newBranchName.Trim(), clientId, newBranchAddress);
             TempData["Success"] = "Sucursal agregada.";
         }
         return RedirectToAction(nameof(Edit), new { id = clientId });
@@ -109,13 +109,25 @@ public class ClientsController : GestionCasosControllerBase
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult DeleteBranch(int branchId, int clientId)
+    public IActionResult DeactivateBranch(int branchId, int clientId)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        _catalogService.DeleteBranch(branchId);
-        TempData["Success"] = "Sucursal eliminada.";
+        _catalogService.DeactivateBranch(branchId);
+        TempData["Success"] = "Sucursal dada de baja.";
+        return RedirectToAction(nameof(Edit), new { id = clientId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ReactivateBranch(int branchId, int clientId)
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        _catalogService.ReactivateBranch(branchId);
+        TempData["Success"] = "Sucursal reactivada.";
         return RedirectToAction(nameof(Edit), new { id = clientId });
     }
 
@@ -124,7 +136,7 @@ public class ClientsController : GestionCasosControllerBase
         model.AvailableCountries = _catalogService.GetCountries().Select(c => new CountryOption { Id = c.Id, Name = c.Name }).ToList();
         if (model.Id != 0)
         {
-            model.Branches = _catalogService.GetBranches(clientId: model.Id);
+            model.Branches = _catalogService.GetBranches(clientId: model.Id, includeInactive: true);
         }
         return model;
     }

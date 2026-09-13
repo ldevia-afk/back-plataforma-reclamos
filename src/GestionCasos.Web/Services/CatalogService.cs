@@ -75,11 +75,12 @@ public class CatalogService : ICatalogService
         }
     }
 
-    public List<Branch> GetBranches(int? clientId = null, int? countryId = null)
+    public List<Branch> GetBranches(int? clientId = null, int? countryId = null, bool includeInactive = false)
     {
         lock (_store.Lock)
         {
             var query = _store.Branches.AsEnumerable();
+            if (!includeInactive) query = query.Where(b => b.IsActive);
             if (clientId.HasValue) query = query.Where(b => b.ClientId == clientId.Value);
             if (countryId.HasValue) query = query.Where(b => b.CountryId == countryId.Value);
             return query.OrderBy(b => b.Name).ToList();
@@ -91,38 +92,52 @@ public class CatalogService : ICatalogService
         lock (_store.Lock) return _store.Branches.FirstOrDefault(b => b.Id == id);
     }
 
-    public Branch CreateBranch(string name, int clientId)
+    public Branch CreateBranch(string name, int clientId, string? address = null)
     {
         lock (_store.Lock)
         {
             var client = _store.Clients.First(c => c.Id == clientId);
-            var branch = new Branch { Id = _store.NextBranchId(), Name = name, ClientId = clientId, CountryId = client.CountryId };
+            var branch = new Branch
+            {
+                Id = _store.NextBranchId(),
+                Name = name,
+                Address = address?.Trim() ?? string.Empty,
+                ClientId = clientId,
+                CountryId = client.CountryId
+            };
             _store.Branches.Add(branch);
             return branch;
         }
     }
 
-    public void UpdateBranch(int id, string name)
+    public void UpdateBranch(int id, string name, string? address)
     {
         lock (_store.Lock)
         {
             var branch = _store.Branches.FirstOrDefault(b => b.Id == id);
             if (branch == null) return;
             branch.Name = name;
+            branch.Address = address?.Trim() ?? string.Empty;
         }
     }
 
-    public void DeleteBranch(int id)
+    public void DeactivateBranch(int id)
     {
         lock (_store.Lock)
         {
-            _store.Branches.RemoveAll(b => b.Id == id);
-            foreach (var user in _store.Users)
-            {
-                user.AssignedBranchIds.Remove(id);
-            }
-            // Los casos que ya referencian esta sucursal quedan con el id (se muestran
-            // como "(sucursal eliminada)"), igual que ocurre con un cliente eliminado.
+            var branch = _store.Branches.FirstOrDefault(b => b.Id == id);
+            if (branch == null) return;
+            branch.IsActive = false;
+        }
+    }
+
+    public void ReactivateBranch(int id)
+    {
+        lock (_store.Lock)
+        {
+            var branch = _store.Branches.FirstOrDefault(b => b.Id == id);
+            if (branch == null) return;
+            branch.IsActive = true;
         }
     }
 

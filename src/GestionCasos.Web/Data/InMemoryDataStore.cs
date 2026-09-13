@@ -66,15 +66,15 @@ public class InMemoryDataStore
         Clients.AddRange(new[] { lider, bancoChile, farmacity, bancoGalicia });
 
         // --- Sucursales ---
-        var brLiderProvidencia = new Branch { Id = _nextBranchId++, Name = "Líder Providencia", ClientId = lider.Id, CountryId = chileId };
-        var brLiderLasCondes = new Branch { Id = _nextBranchId++, Name = "Líder Las Condes", ClientId = lider.Id, CountryId = chileId };
-        var brLiderMaipu = new Branch { Id = _nextBranchId++, Name = "Líder Maipú", ClientId = lider.Id, CountryId = chileId };
-        var brBancoChileCentro = new Branch { Id = _nextBranchId++, Name = "Sucursal Centro", ClientId = bancoChile.Id, CountryId = chileId };
-        var brBancoChileNunoa = new Branch { Id = _nextBranchId++, Name = "Sucursal Ñuñoa", ClientId = bancoChile.Id, CountryId = chileId };
-        var brFarmacityPalermo = new Branch { Id = _nextBranchId++, Name = "Farmacity Palermo", ClientId = farmacity.Id, CountryId = argentinaId };
-        var brFarmacityRecoleta = new Branch { Id = _nextBranchId++, Name = "Farmacity Recoleta", ClientId = farmacity.Id, CountryId = argentinaId };
-        var brGaliciaMicrocentro = new Branch { Id = _nextBranchId++, Name = "Sucursal Microcentro", ClientId = bancoGalicia.Id, CountryId = argentinaId };
-        var brGaliciaBelgrano = new Branch { Id = _nextBranchId++, Name = "Sucursal Belgrano", ClientId = bancoGalicia.Id, CountryId = argentinaId };
+        var brLiderProvidencia = new Branch { Id = _nextBranchId++, Name = "Líder Providencia", ClientId = lider.Id, CountryId = chileId, Address = "Av. Providencia 2124, Providencia, Santiago" };
+        var brLiderLasCondes = new Branch { Id = _nextBranchId++, Name = "Líder Las Condes", ClientId = lider.Id, CountryId = chileId, Address = "Av. Apoquindo 4501, Las Condes, Santiago" };
+        var brLiderMaipu = new Branch { Id = _nextBranchId++, Name = "Líder Maipú", ClientId = lider.Id, CountryId = chileId, Address = "Av. Pajaritos 3030, Maipú, Santiago" };
+        var brBancoChileCentro = new Branch { Id = _nextBranchId++, Name = "Sucursal Centro", ClientId = bancoChile.Id, CountryId = chileId, Address = "Ahumada 251, Santiago Centro" };
+        var brBancoChileNunoa = new Branch { Id = _nextBranchId++, Name = "Sucursal Ñuñoa", ClientId = bancoChile.Id, CountryId = chileId, Address = "Av. Irarrázaval 3125, Ñuñoa, Santiago" };
+        var brFarmacityPalermo = new Branch { Id = _nextBranchId++, Name = "Farmacity Palermo", ClientId = farmacity.Id, CountryId = argentinaId, Address = "Av. Santa Fe 3253, Palermo, CABA" };
+        var brFarmacityRecoleta = new Branch { Id = _nextBranchId++, Name = "Farmacity Recoleta", ClientId = farmacity.Id, CountryId = argentinaId, Address = "Av. Callao 1200, Recoleta, CABA" };
+        var brGaliciaMicrocentro = new Branch { Id = _nextBranchId++, Name = "Sucursal Microcentro", ClientId = bancoGalicia.Id, CountryId = argentinaId, Address = "Florida 401, Microcentro, CABA" };
+        var brGaliciaBelgrano = new Branch { Id = _nextBranchId++, Name = "Sucursal Belgrano", ClientId = bancoGalicia.Id, CountryId = argentinaId, Address = "Av. Cabildo 2040, Belgrano, CABA" };
         Branches.AddRange(new[]
         {
             brLiderProvidencia, brLiderLasCondes, brLiderMaipu,

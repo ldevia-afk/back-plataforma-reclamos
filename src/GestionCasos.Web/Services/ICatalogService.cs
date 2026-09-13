@@ -13,11 +13,15 @@ public interface ICatalogService
     void UpdateClient(int id, string name, int countryId);
     void DeleteClient(int id);
 
-    List<Branch> GetBranches(int? clientId = null, int? countryId = null);
+    /// <summary>Por defecto sólo devuelve sucursales activas; <paramref name="includeInactive"/> trae también las dadas de baja.</summary>
+    List<Branch> GetBranches(int? clientId = null, int? countryId = null, bool includeInactive = false);
     Branch? GetBranch(int id);
-    Branch CreateBranch(string name, int clientId);
-    void UpdateBranch(int id, string name);
-    void DeleteBranch(int id);
+    Branch CreateBranch(string name, int clientId, string? address = null);
+    void UpdateBranch(int id, string name, string? address);
+
+    /// <summary>Baja lógica: una sucursal inactiva deja de poder elegirse para casos nuevos.</summary>
+    void DeactivateBranch(int id);
+    void ReactivateBranch(int id);
 
     List<Category> GetCategories();
     Category? GetCategory(int id);

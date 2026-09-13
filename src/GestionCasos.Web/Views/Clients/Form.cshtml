@@ -34,38 +34,71 @@
     <div class="gc-card">
         <div class="gc-card-title">Sucursales / puntos</div>
 
-        <form asp-controller="Clients" asp-action="AddBranch" method="post" class="gc-filters">
+        <form asp-controller="Clients" asp-action="AddBranch" method="post" class="gc-filters" id="add-branch-form">
             @Html.AntiForgeryToken()
             <input type="hidden" name="clientId" value="@Model.Id" />
             <div class="gc-form-group">
                 <label class="gc-label">Nueva sucursal</label>
-                <input class="gc-input" name="newBranchName" placeholder="Ej: Sucursal Centro" required />
+                <input id="new-branch-name" class="gc-input" name="newBranchName" placeholder="Ej: Sucursal Centro" required />
+            </div>
+            <div class="gc-form-group">
+                <label class="gc-label">Dirección</label>
+                <input id="new-branch-address" class="gc-input" name="newBranchAddress" placeholder="Ej: Av. Providencia 1234, Santiago" />
             </div>
             <button type="submit" class="gc-btn">Agregar</button>
         </form>
 
         <table class="gc-table" style="margin-top:16px;">
-            <thead><tr><th>Nombre</th><th></th></tr></thead>
+            <thead><tr><th>Nombre</th><th>Dirección</th><th>Estado</th><th></th></tr></thead>
             <tbody>
                 @foreach (var branch in Model.Branches)
                 {
                     <tr>
                         <td>@branch.Name</td>
+                        <td>@(string.IsNullOrWhiteSpace(branch.Address) ? "-" : branch.Address)</td>
+                        <td><span class="gc-status @(branch.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@(branch.IsActive ? "Activa" : "Inactiva")</span></td>
                         <td>
-                            <form asp-controller="Clients" asp-action="DeleteBranch" method="post" class="gc-inline-form">
-                                @Html.AntiForgeryToken()
-                                <input type="hidden" name="branchId" value="@branch.Id" />
-                                <input type="hidden" name="clientId" value="@Model.Id" />
-                                <button type="submit" class="gc-link-button">Eliminar</button>
-                            </form>
+                            @if (branch.IsActive)
+                            {
+                                <form asp-controller="Clients" asp-action="DeactivateBranch" method="post" class="gc-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="branchId" value="@branch.Id" />
+                                    <input type="hidden" name="clientId" value="@Model.Id" />
+                                    <button type="submit" class="gc-link-button">Dar de baja</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-controller="Clients" asp-action="ReactivateBranch" method="post" class="gc-inline-form">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="branchId" value="@branch.Id" />
+                                    <input type="hidden" name="clientId" value="@Model.Id" />
+                                    <button type="submit" class="gc-link-button">Reactivar</button>
+                                </form>
+                            }
                         </td>
                     </tr>
                 }
                 @if (Model.Branches.Count == 0)
                 {
-                    <tr><td colspan="2" class="gc-hint">Todavía no hay sucursales cargadas.</td></tr>
+                    <tr><td colspan="4" class="gc-hint">Todavía no hay sucursales cargadas.</td></tr>
                 }
             </tbody>
         </table>
     </div>
 }
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var form = document.getElementById("add-branch-form");
+        if (!form) return;
+        form.addEventListener("submit", function (e) {
+            var name = document.getElementById("new-branch-name").value.trim();
+            var address = document.getElementById("new-branch-address").value.trim();
+            var summary = "Confirmás agregar la sucursal \"" + name + "\"" + (address ? " (" + address + ")" : "") + "?";
+            if (!confirm(summary)) {
+                e.preventDefault();
+            }
+        });
+    });
+</script>
