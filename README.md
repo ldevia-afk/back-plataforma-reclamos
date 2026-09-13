@@ -57,12 +57,14 @@ usuario desde la sesión/claims que ya use la plataforma, y eliminar
   divididos por país.
 - **Perfil Cliente**: tiene uno o más *clientes* asociados; cada cliente tiene
   una lista de *sucursales/puntos*. Al crear un caso elige el cliente, una o
-  varias sucursales (mismo caso puede aplicar a varias a la vez), una
-  *categoría* (Solicitud, Consulta o Reclamo, más las que el equipo interno
-  agregue) y un detalle en texto libre.
+  varias sucursales, una *categoría* (Solicitud, Consulta o Reclamo, más las
+  que el equipo interno agregue) y un detalle en texto libre. Si selecciona
+  varias sucursales a la vez, se genera **un caso independiente por cada una**
+  (mismo detalle y categoría, pero seguimiento y estado propios).
 - **Perfil Interno**: tiene asociadas una, varias o todas las sucursales del
   país. Ve en su bandeja los casos de esas sucursales, puede agruparlos o
-  filtrarlos por categoría/estado/grupo, y derivarlos a un **grupo resolutor**.
+  filtrarlos por categoría/estado/grupo, y derivarlos a un **grupo resolutor**
+  con un comentario u observación opcional (queda en el historial del caso).
 - **Grupos resolutores**: ABM de grupos por país, con usuarios internos como
   miembros; un caso derivado a un grupo pasa automáticamente de "Inicial" a
   "Asignado".

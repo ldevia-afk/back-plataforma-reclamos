@@ -10,10 +10,7 @@ public static class CasesSharedMapper
     public static CaseListItemViewModel ToListItem(ServiceCase c, ICatalogService catalog)
     {
         var client = catalog.GetClient(c.ClientId);
-        var branchNames = c.BranchIds
-            .Select(id => catalog.GetBranch(id)?.Name)
-            .Where(n => n != null)
-            .Cast<string>();
+        var branch = catalog.GetBranch(c.BranchId);
         var category = catalog.GetCategory(c.CategoryId);
         var group = c.AssignedGroupId.HasValue ? catalog.GetResolverGroup(c.AssignedGroupId.Value) : null;
 
@@ -22,7 +19,7 @@ public static class CasesSharedMapper
             Id = c.Id,
             Number = c.Number,
             ClientName = client?.Name ?? "(cliente eliminado)",
-            BranchNames = string.Join(", ", branchNames),
+            BranchName = branch?.Name ?? "(sucursal eliminada)",
             CategoryName = category?.Name ?? "(sin categoría)",
             Status = c.Status,
             ResolverGroupName = group?.Name,
@@ -45,7 +42,7 @@ public static class CasesSharedMapper
             Number = c.Number,
             ClientName = client?.Name ?? "(cliente eliminado)",
             CountryName = country?.Name ?? string.Empty,
-            BranchNames = c.BranchIds.Select(id => catalog.GetBranch(id)?.Name ?? "(sucursal eliminada)").ToList(),
+            BranchName = catalog.GetBranch(c.BranchId)?.Name ?? "(sucursal eliminada)",
             CategoryName = category?.Name ?? "(sin categoría)",
             Description = c.Description,
             Status = c.Status,
@@ -71,7 +68,8 @@ public static class CasesSharedMapper
                 {
                     GroupName = h.ResolverGroupId.HasValue ? (catalog.GetResolverGroup(h.ResolverGroupId.Value)?.Name ?? "(grupo eliminado)") : "Sin grupo",
                     ChangedAtUtc = h.ChangedAtUtc,
-                    ChangedByName = h.ChangedByUserId.HasValue ? catalog.GetUser(h.ChangedByUserId.Value)?.Name : null
+                    ChangedByName = h.ChangedByUserId.HasValue ? catalog.GetUser(h.ChangedByUserId.Value)?.Name : null,
+                    Comment = h.Comment
                 })
                 .ToList()
         };

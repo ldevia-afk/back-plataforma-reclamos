@@ -41,7 +41,7 @@ public class CaseListItemViewModel
     public int Id { get; set; }
     public string Number { get; set; } = string.Empty;
     public string ClientName { get; set; } = string.Empty;
-    public string BranchNames { get; set; } = string.Empty;
+    public string BranchName { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
     public CaseStatus Status { get; set; }
     public string? ResolverGroupName { get; set; }
@@ -55,7 +55,7 @@ public class CaseDetailViewModel
     public string Number { get; set; } = string.Empty;
     public string ClientName { get; set; } = string.Empty;
     public string CountryName { get; set; } = string.Empty;
-    public List<string> BranchNames { get; set; } = new();
+    public string BranchName { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public CaseStatus Status { get; set; }
@@ -88,6 +88,7 @@ public class GroupHistoryRow
     public string GroupName { get; set; } = string.Empty;
     public DateTime ChangedAtUtc { get; set; }
     public string? ChangedByName { get; set; }
+    public string? Comment { get; set; }
 }
 
 public class InternalInboxViewModel

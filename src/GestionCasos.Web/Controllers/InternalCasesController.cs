@@ -64,7 +64,7 @@ public class InternalCasesController : GestionCasosControllerBase
         {
             return NotFound();
         }
-        if (!user.HasAllBranches && !serviceCase.BranchIds.Any(b => user.AssignedBranchIds.Contains(b)))
+        if (!user.HasAllBranches && !user.AssignedBranchIds.Contains(serviceCase.BranchId))
         {
             return NotFound();
         }
@@ -74,12 +74,12 @@ public class InternalCasesController : GestionCasosControllerBase
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult AssignGroup(int id, int? resolverGroupId)
+    public IActionResult AssignGroup(int id, int? resolverGroupId, string? comment)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        _caseService.AssignGroup(id, resolverGroupId, CurrentUser!.Id);
+        _caseService.AssignGroup(id, resolverGroupId, CurrentUser!.Id, comment);
         TempData["Success"] = "Se actualizó el grupo resolutor del caso.";
         return RedirectToAction(nameof(Details), new { id });
     }

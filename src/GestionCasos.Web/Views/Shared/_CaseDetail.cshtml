@@ -6,7 +6,7 @@
     <table class="gc-table">
         <tr><th style="width:180px;">Cliente</th><td>@Model.ClientName</td></tr>
         <tr><th>País</th><td>@Model.CountryName</td></tr>
-        <tr><th>Sucursales</th><td>@string.Join(", ", Model.BranchNames)</td></tr>
+        <tr><th>Sucursal</th><td>@Model.BranchName</td></tr>
         <tr><th>Categoría</th><td>@Model.CategoryName</td></tr>
         <tr><th>Estado</th><td><span class="gc-status gc-status-@Model.Status">@Model.Status.ToDisplayName()</span></td></tr>
         <tr><th>Grupo resolutor</th><td>@(Model.ResolverGroupName ?? "Sin asignar")</td></tr>
@@ -25,14 +25,20 @@
     <div class="gc-card">
         <div class="gc-card-title">Gestión del caso</div>
 
-        <form asp-controller="InternalCases" asp-action="AssignGroup" method="post" class="gc-filters">
+        <form asp-controller="InternalCases" asp-action="AssignGroup" method="post">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@Model.Id" />
+            <div class="gc-filters">
+                <div class="gc-form-group">
+                    <label class="gc-label">Derivar a grupo resolutor</label>
+                    <select name="resolverGroupId" class="gc-select" asp-items="Model.AvailableGroups.Select(g => new SelectListItem(g.Name, g.Id.ToString()))">
+                        <option value="">-- Sin grupo --</option>
+                    </select>
+                </div>
+            </div>
             <div class="gc-form-group">
-                <label class="gc-label">Derivar a grupo resolutor</label>
-                <select name="resolverGroupId" class="gc-select" asp-items="Model.AvailableGroups.Select(g => new SelectListItem(g.Name, g.Id.ToString()))">
-                    <option value="">-- Sin grupo --</option>
-                </select>
+                <label class="gc-label">Comentario / observación (opcional)</label>
+                <textarea name="comment" class="gc-input" rows="2" placeholder="Ej: se deriva por incidencia de hardware, favor priorizar."></textarea>
             </div>
             <button type="submit" class="gc-btn">Derivar</button>
         </form>
@@ -70,6 +76,10 @@
             <li>
                 <strong>@h.GroupName</strong> — @h.ChangedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                 @if (h.ChangedByName != null) { <text> · @h.ChangedByName</text> }
+                @if (!string.IsNullOrWhiteSpace(h.Comment))
+                {
+                    <div class="gc-hint">"@h.Comment"</div>
+                }
             </li>
         }
     </ul>

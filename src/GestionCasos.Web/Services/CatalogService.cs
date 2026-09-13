@@ -121,10 +121,8 @@ public class CatalogService : ICatalogService
             {
                 user.AssignedBranchIds.Remove(id);
             }
-            foreach (var c in _store.Cases)
-            {
-                c.BranchIds.Remove(id);
-            }
+            // Los casos que ya referencian esta sucursal quedan con el id (se muestran
+            // como "(sucursal eliminada)"), igual que ocurre con un cliente eliminado.
         }
     }
 

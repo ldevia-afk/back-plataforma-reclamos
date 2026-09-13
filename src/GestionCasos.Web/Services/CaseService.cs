@@ -12,33 +12,40 @@ public class CaseService : ICaseService
         _store = store;
     }
 
-    public ServiceCase CreateCase(AppUser createdBy, int clientId, List<int> branchIds, int categoryId, string description)
+    public List<ServiceCase> CreateCases(AppUser createdBy, int clientId, List<int> branchIds, int categoryId, string description)
     {
         lock (_store.Lock)
         {
             var client = _store.Clients.First(c => c.Id == clientId);
-            var now = DateTime.UtcNow;
-            var id = _store.NextCaseId();
             var countryCode = _store.Countries.First(c => c.Id == client.CountryId).Code;
+            var created = new List<ServiceCase>();
 
-            var serviceCase = new ServiceCase
+            foreach (var branchId in branchIds)
             {
-                Id = id,
-                Number = $"{countryCode}-{id:D6}",
-                ClientId = clientId,
-                BranchIds = branchIds,
-                CategoryId = categoryId,
-                Description = description,
-                CountryId = client.CountryId,
-                Status = CaseStatus.Inicial,
-                CreatedByUserId = createdBy.Id,
-                CreatedAtUtc = now
-            };
-            serviceCase.StatusHistory.Add(new CaseStatusHistoryEntry { Status = CaseStatus.Inicial, ChangedAtUtc = now, ChangedByUserId = createdBy.Id });
-            serviceCase.GroupHistory.Add(new CaseGroupHistoryEntry { ResolverGroupId = null, ChangedAtUtc = now, ChangedByUserId = createdBy.Id });
+                var now = DateTime.UtcNow;
+                var id = _store.NextCaseId();
 
-            _store.Cases.Add(serviceCase);
-            return serviceCase;
+                var serviceCase = new ServiceCase
+                {
+                    Id = id,
+                    Number = $"{countryCode}-{id:D6}",
+                    ClientId = clientId,
+                    BranchId = branchId,
+                    CategoryId = categoryId,
+                    Description = description,
+                    CountryId = client.CountryId,
+                    Status = CaseStatus.Inicial,
+                    CreatedByUserId = createdBy.Id,
+                    CreatedAtUtc = now
+                };
+                serviceCase.StatusHistory.Add(new CaseStatusHistoryEntry { Status = CaseStatus.Inicial, ChangedAtUtc = now, ChangedByUserId = createdBy.Id });
+                serviceCase.GroupHistory.Add(new CaseGroupHistoryEntry { ResolverGroupId = null, ChangedAtUtc = now, ChangedByUserId = createdBy.Id });
+
+                _store.Cases.Add(serviceCase);
+                created.Add(serviceCase);
+            }
+
+            return created;
         }
     }
 
@@ -60,7 +67,7 @@ public class CaseService : ICaseService
             var query = _store.Cases.Where(c => c.CountryId == user.CountryId);
             if (!user.HasAllBranches)
             {
-                query = query.Where(c => c.BranchIds.Any(b => user.AssignedBranchIds.Contains(b)));
+                query = query.Where(c => user.AssignedBranchIds.Contains(c.BranchId));
             }
             return query.OrderByDescending(c => c.CreatedAtUtc).ToList();
         }
@@ -88,7 +95,7 @@ public class CaseService : ICaseService
         }
     }
 
-    public void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId)
+    public void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId, string? comment)
     {
         lock (_store.Lock)
         {
@@ -100,7 +107,8 @@ public class CaseService : ICaseService
             {
                 ResolverGroupId = resolverGroupId,
                 ChangedAtUtc = DateTime.UtcNow,
-                ChangedByUserId = changedByUserId
+                ChangedByUserId = changedByUserId,
+                Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim()
             });
 
             if (serviceCase.Status == CaseStatus.Inicial && resolverGroupId.HasValue)

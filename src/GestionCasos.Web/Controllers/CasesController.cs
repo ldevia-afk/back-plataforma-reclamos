@@ -73,8 +73,10 @@ public class CasesController : GestionCasosControllerBase
             return View(vm);
         }
 
-        var created = _caseService.CreateCase(user, model.ClientId.Value, branchIds, model.CategoryId!.Value, model.Description.Trim());
-        TempData["Success"] = $"Se registró el caso {created.Number}.";
+        var created = _caseService.CreateCases(user, model.ClientId.Value, branchIds, model.CategoryId!.Value, model.Description.Trim());
+        TempData["Success"] = created.Count == 1
+            ? $"Se registró el caso {created[0].Number}."
+            : $"Se registraron {created.Count} casos (uno por sucursal): {string.Join(", ", created.Select(c => c.Number))}.";
         return RedirectToAction(nameof(Index));
     }
 

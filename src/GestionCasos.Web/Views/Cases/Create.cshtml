@@ -19,6 +19,7 @@
 
         <div class="gc-form-group">
             <label class="gc-label">Sucursales / puntos (podés elegir varias)</label>
+            <p class="gc-hint">Si elegís más de una, se genera un caso independiente por cada sucursal (mismo detalle y categoría).</p>
             @foreach (var client in Model.AvailableClients)
             {
                 <div data-branch-group="@client.ClientId" hidden style="margin-bottom:8px;">

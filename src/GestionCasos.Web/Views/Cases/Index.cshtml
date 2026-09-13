@@ -18,7 +18,7 @@
                 <tr>
                     <th>Número</th>
                     <th>Cliente</th>
-                    <th>Sucursales</th>
+                    <th>Sucursal</th>
                     <th>Categoría</th>
                     <th>Estado</th>
                     <th>Creado</th>
@@ -31,7 +31,7 @@
                     <tr>
                         <td>@item.Number</td>
                         <td>@item.ClientName</td>
-                        <td>@item.BranchNames</td>
+                        <td>@item.BranchName</td>
                         <td>@item.CategoryName</td>
                         <td><span class="gc-status gc-status-@item.Status">@item.Status.ToDisplayName()</span></td>
                         <td>@item.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>

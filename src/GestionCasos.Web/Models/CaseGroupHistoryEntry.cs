@@ -6,4 +6,6 @@ public class CaseGroupHistoryEntry
     public int? ResolverGroupId { get; set; }
     public DateTime ChangedAtUtc { get; set; }
     public int? ChangedByUserId { get; set; }
+    /// <summary>Comentario u observación opcional cargada al derivar el caso.</summary>
+    public string? Comment { get; set; }
 }

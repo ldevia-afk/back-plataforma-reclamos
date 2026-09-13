@@ -4,8 +4,11 @@ namespace GestionCasos.Web.Services;
 
 public interface ICaseService
 {
-    /// <summary>Crea un caso nuevo para el usuario cliente indicado.</summary>
-    ServiceCase CreateCase(AppUser createdBy, int clientId, List<int> branchIds, int categoryId, string description);
+    /// <summary>
+    /// Crea un caso por cada sucursal indicada (si el cliente selecciona varias
+    /// sucursales a la vez, se generan casos independientes, uno por sucursal).
+    /// </summary>
+    List<ServiceCase> CreateCases(AppUser createdBy, int clientId, List<int> branchIds, int categoryId, string description);
 
     /// <summary>Casos visibles para un usuario cliente (los de sus clientes asignados).</summary>
     List<ServiceCase> GetCasesForClientUser(AppUser user);
@@ -16,5 +19,5 @@ public interface ICaseService
     ServiceCase? GetCase(int id);
 
     void ChangeStatus(int caseId, CaseStatus newStatus, int changedByUserId);
-    void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId);
+    void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId, string? comment);
 }
