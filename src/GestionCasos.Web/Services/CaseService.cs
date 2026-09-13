@@ -6,10 +6,12 @@ namespace GestionCasos.Web.Services;
 public class CaseService : ICaseService
 {
     private readonly InMemoryDataStore _store;
+    private readonly IEmailService _emailService;
 
-    public CaseService(InMemoryDataStore store)
+    public CaseService(InMemoryDataStore store, IEmailService emailService)
     {
         _store = store;
+        _emailService = emailService;
     }
 
     public List<ServiceCase> CreateCases(AppUser createdBy, int clientId, List<int> branchIds, CaseType caseType, string description)
@@ -79,7 +81,7 @@ public class CaseService : ICaseService
         lock (_store.Lock) return _store.Cases.FirstOrDefault(c => c.Id == id);
     }
 
-    public void ChangeStatus(int caseId, CaseStatus newStatus, int changedByUserId)
+    public void ChangeStatus(int caseId, CaseStatus newStatus, int changedByUserId, string? resolutionComment = null)
     {
         lock (_store.Lock)
         {
@@ -93,6 +95,27 @@ public class CaseService : ICaseService
                 ChangedAtUtc = DateTime.UtcNow,
                 ChangedByUserId = changedByUserId
             });
+
+            if (newStatus == CaseStatus.Resuelto)
+            {
+                serviceCase.ResolutionComment = string.IsNullOrWhiteSpace(resolutionComment) ? null : resolutionComment.Trim();
+                serviceCase.ResolutionConfirmed = false;
+                serviceCase.ResolutionConfirmedAtUtc = null;
+                serviceCase.ResolutionConfirmedByUserId = null;
+
+                var helpDeskGroup = _store.ResolverGroups.FirstOrDefault(g => g.CountryId == serviceCase.CountryId && g.IsHelpDesk);
+                if (helpDeskGroup != null && serviceCase.AssignedGroupId != helpDeskGroup.Id)
+                {
+                    serviceCase.AssignedGroupId = helpDeskGroup.Id;
+                    serviceCase.GroupHistory.Add(new CaseGroupHistoryEntry
+                    {
+                        ResolverGroupId = helpDeskGroup.Id,
+                        ChangedAtUtc = DateTime.UtcNow,
+                        ChangedByUserId = changedByUserId,
+                        Comment = "Derivado automáticamente a Mesa de Ayuda para confirmar la resolución con el cliente."
+                    });
+                }
+            }
         }
     }
 
@@ -134,5 +157,22 @@ public class CaseService : ICaseService
 
             serviceCase.CategoryId = categoryId;
         }
+    }
+
+    public void ConfirmResolution(int caseId, string clientMessage, int confirmedByUserId)
+    {
+        ServiceCase? serviceCase;
+        lock (_store.Lock)
+        {
+            serviceCase = _store.Cases.FirstOrDefault(c => c.Id == caseId);
+            if (serviceCase == null || serviceCase.Status != CaseStatus.Resuelto) return;
+
+            serviceCase.ResolutionComment = clientMessage.Trim();
+            serviceCase.ResolutionConfirmed = true;
+            serviceCase.ResolutionConfirmedAtUtc = DateTime.UtcNow;
+            serviceCase.ResolutionConfirmedByUserId = confirmedByUserId;
+        }
+
+        _emailService.SendCaseResolutionEmail(serviceCase, serviceCase.ResolutionComment);
     }
 }

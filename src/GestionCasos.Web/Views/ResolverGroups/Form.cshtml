@@ -25,6 +25,17 @@
         </div>
 
         <div class="gc-form-group">
+            <label class="gc-checkbox-item">
+                <input type="checkbox" asp-for="IsHelpDesk" />
+                Es el equipo de Mesa de Ayuda de este país
+            </label>
+            <p class="gc-hint">
+                Cuando un caso pasa a estado Resuelto se deriva automáticamente acá para que confirmen
+                el mensaje de resolución antes de que se le envíe al cliente. Sólo puede haber uno por país.
+            </p>
+        </div>
+
+        <div class="gc-form-group">
             <label class="gc-label">Miembros (usuarios de perfil Interno)</label>
             <div class="gc-checkbox-list">
                 @foreach (var user in Model.AvailableUsers)

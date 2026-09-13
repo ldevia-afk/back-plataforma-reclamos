@@ -31,4 +31,16 @@ public class ServiceCase
 
     public List<CaseStatusHistoryEntry> StatusHistory { get; set; } = new();
     public List<CaseGroupHistoryEntry> GroupHistory { get; set; } = new();
+
+    /// <summary>
+    /// Comentario con el detalle de la resolución, cargado por el grupo resolutor
+    /// al marcar el caso como Resuelto. No es visible para el cliente hasta que
+    /// Mesa de Ayuda lo confirme (ver ResolutionConfirmed).
+    /// </summary>
+    public string? ResolutionComment { get; set; }
+
+    /// <summary>True una vez que Mesa de Ayuda confirmó y "envió" el mensaje al cliente.</summary>
+    public bool ResolutionConfirmed { get; set; }
+    public DateTime? ResolutionConfirmedAtUtc { get; set; }
+    public int? ResolutionConfirmedByUserId { get; set; }
 }

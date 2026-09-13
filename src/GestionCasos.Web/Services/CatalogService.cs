@@ -173,28 +173,31 @@ public class CatalogService : ICatalogService
         lock (_store.Lock) return _store.ResolverGroups.FirstOrDefault(g => g.Id == id);
     }
 
-    public ResolverGroup CreateResolverGroup(string name, int countryId, List<int> memberUserIds)
+    public ResolverGroup CreateResolverGroup(string name, int countryId, List<int> memberUserIds, bool isHelpDesk = false)
     {
         lock (_store.Lock)
         {
-            var group = new ResolverGroup { Id = _store.NextResolverGroupId(), Name = name, CountryId = countryId, MemberUserIds = memberUserIds };
+            var group = new ResolverGroup { Id = _store.NextResolverGroupId(), Name = name, CountryId = countryId, MemberUserIds = memberUserIds, IsHelpDesk = isHelpDesk };
             _store.ResolverGroups.Add(group);
             foreach (var userId in memberUserIds)
             {
                 var user = _store.Users.FirstOrDefault(u => u.Id == userId);
                 user?.ResolverGroupIds.Add(group.Id);
             }
+            if (isHelpDesk) UnsetOtherHelpDeskGroups(countryId, group.Id);
             return group;
         }
     }
 
-    public void UpdateResolverGroup(int id, string name, List<int> memberUserIds)
+    public void UpdateResolverGroup(int id, string name, List<int> memberUserIds, bool isHelpDesk)
     {
         lock (_store.Lock)
         {
             var group = _store.ResolverGroups.FirstOrDefault(g => g.Id == id);
             if (group == null) return;
             group.Name = name;
+            group.IsHelpDesk = isHelpDesk;
+            if (isHelpDesk) UnsetOtherHelpDeskGroups(group.CountryId, group.Id);
 
             foreach (var userId in group.MemberUserIds.Except(memberUserIds).ToList())
             {
@@ -223,6 +226,15 @@ public class CatalogService : ICatalogService
             {
                 c.AssignedGroupId = null;
             }
+        }
+    }
+
+    /// <summary>Sólo puede haber un grupo Mesa de Ayuda (IsHelpDesk) por país.</summary>
+    private void UnsetOtherHelpDeskGroups(int countryId, int exceptGroupId)
+    {
+        foreach (var other in _store.ResolverGroups.Where(g => g.CountryId == countryId && g.Id != exceptGroupId && g.IsHelpDesk))
+        {
+            other.IsHelpDesk = false;
         }
     }
 

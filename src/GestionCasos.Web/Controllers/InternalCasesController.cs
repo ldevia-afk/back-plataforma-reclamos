@@ -101,13 +101,39 @@ public class InternalCasesController : GestionCasosControllerBase
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult ChangeStatus(int id, CaseStatus newStatus)
+    public IActionResult ChangeStatus(int id, CaseStatus newStatus, string? resolutionComment)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        _caseService.ChangeStatus(id, newStatus, CurrentUser!.Id);
-        TempData["Success"] = "Se actualizó el estado del caso.";
+        if (newStatus == CaseStatus.Resuelto && string.IsNullOrWhiteSpace(resolutionComment))
+        {
+            TempData["Error"] = "Para marcar el caso como Resuelto tenés que agregar un comentario con el detalle de la resolución.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        _caseService.ChangeStatus(id, newStatus, CurrentUser!.Id, resolutionComment);
+        TempData["Success"] = newStatus == CaseStatus.Resuelto
+            ? "Caso marcado como Resuelto. Se derivó a Mesa de Ayuda para confirmar el mensaje al cliente."
+            : "Se actualizó el estado del caso.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ConfirmResolution(int id, string clientMessage)
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        if (string.IsNullOrWhiteSpace(clientMessage))
+        {
+            TempData["Error"] = "El mensaje para el cliente no puede estar vacío.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        _caseService.ConfirmResolution(id, clientMessage, CurrentUser!.Id);
+        TempData["Success"] = "Se guardó y envió el mensaje de resolución al cliente.";
         return RedirectToAction(nameof(Details), new { id });
     }
 }

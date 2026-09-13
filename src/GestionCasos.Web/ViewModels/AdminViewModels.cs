@@ -16,6 +16,9 @@ public class ResolverGroupFormViewModel
 
     public List<int> MemberUserIds { get; set; } = new();
 
+    /// <summary>Marca a este grupo como la "Mesa de Ayuda" del país (uno solo por país).</summary>
+    public bool IsHelpDesk { get; set; }
+
     public List<CountryOption> AvailableCountries { get; set; } = new();
     public List<AppUser> AvailableUsers { get; set; } = new();
 }

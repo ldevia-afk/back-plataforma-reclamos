@@ -72,6 +72,16 @@ public class CaseDetailViewModel
 
     public List<StatusHistoryRow> StatusHistory { get; set; } = new();
     public List<GroupHistoryRow> GroupHistory { get; set; } = new();
+
+    // --- Resolución y confirmación con el cliente ---
+    public DateTime? ResolvedAtUtc { get; set; }
+    public string? ResolutionComment { get; set; }
+    public bool ResolutionConfirmed { get; set; }
+    public DateTime? ResolutionConfirmedAtUtc { get; set; }
+    /// <summary>El grupo asignado actualmente es la Mesa de Ayuda del país (puede confirmar la resolución).</summary>
+    public bool AssignedToHelpDesk { get; set; }
+    /// <summary>El cliente ya puede ver el comentario de resolución.</summary>
+    public bool ShowResolutionToClient => Status == CaseStatus.Resuelto && ResolutionConfirmed;
 }
 
 public class ResolverGroupOption

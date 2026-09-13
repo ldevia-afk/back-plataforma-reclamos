@@ -13,7 +13,13 @@
             @foreach (var group in Model)
             {
                 <tr>
-                    <td>@group.Name</td>
+                    <td>
+                        @group.Name
+                        @if (group.IsHelpDesk)
+                        {
+                            <span class="gc-user-badge">Mesa de Ayuda</span>
+                        }
+                    </td>
                     <td>@ViewBag.CountryNames[group.CountryId]</td>
                     <td>@group.MemberUserIds.Count</td>
                     <td>

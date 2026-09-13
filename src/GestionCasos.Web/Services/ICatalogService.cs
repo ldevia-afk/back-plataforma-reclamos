@@ -26,8 +26,8 @@ public interface ICatalogService
 
     List<ResolverGroup> GetResolverGroups(int? countryId = null);
     ResolverGroup? GetResolverGroup(int id);
-    ResolverGroup CreateResolverGroup(string name, int countryId, List<int> memberUserIds);
-    void UpdateResolverGroup(int id, string name, List<int> memberUserIds);
+    ResolverGroup CreateResolverGroup(string name, int countryId, List<int> memberUserIds, bool isHelpDesk = false);
+    void UpdateResolverGroup(int id, string name, List<int> memberUserIds, bool isHelpDesk);
     void DeleteResolverGroup(int id);
 
     List<AppUser> GetUsers(UserProfileType? profileType = null, int? countryId = null);

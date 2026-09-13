@@ -19,6 +19,7 @@ public class InMemoryDataStore
     public List<ResolverGroup> ResolverGroups { get; } = new();
     public List<AppUser> Users { get; } = new();
     public List<ServiceCase> Cases { get; } = new();
+    public List<SentEmail> SentEmails { get; } = new();
 
     private int _nextClientId = 1;
     private int _nextBranchId = 1;
@@ -26,6 +27,7 @@ public class InMemoryDataStore
     private int _nextResolverGroupId = 1;
     private int _nextUserId = 1;
     private int _nextCaseId = 1;
+    private int _nextSentEmailId = 1;
 
     public object Lock => _lock;
 
@@ -35,6 +37,7 @@ public class InMemoryDataStore
     public int NextResolverGroupId() { lock (_lock) return _nextResolverGroupId++; }
     public int NextUserId() { lock (_lock) return _nextUserId++; }
     public int NextCaseId() { lock (_lock) return _nextCaseId++; }
+    public int NextSentEmailId() { lock (_lock) return _nextSentEmailId++; }
 
     public InMemoryDataStore()
     {
@@ -81,9 +84,9 @@ public class InMemoryDataStore
         });
 
         // --- Grupos resolutores ---
-        var mesaAyudaCl = new ResolverGroup { Id = _nextResolverGroupId++, Name = "Mesa de Ayuda CL", CountryId = chileId };
+        var mesaAyudaCl = new ResolverGroup { Id = _nextResolverGroupId++, Name = "Mesa de Ayuda CL", CountryId = chileId, IsHelpDesk = true };
         var logisticaCl = new ResolverGroup { Id = _nextResolverGroupId++, Name = "Logística CL", CountryId = chileId };
-        var mesaAyudaAr = new ResolverGroup { Id = _nextResolverGroupId++, Name = "Mesa de Ayuda AR", CountryId = argentinaId };
+        var mesaAyudaAr = new ResolverGroup { Id = _nextResolverGroupId++, Name = "Mesa de Ayuda AR", CountryId = argentinaId, IsHelpDesk = true };
         var seguridadAr = new ResolverGroup { Id = _nextResolverGroupId++, Name = "Seguridad AR", CountryId = argentinaId };
         ResolverGroups.AddRange(new[] { mesaAyudaCl, logisticaCl, mesaAyudaAr, seguridadAr });
 
@@ -154,7 +157,7 @@ public class InMemoryDataStore
         // --- Casos de ejemplo (para poder ver la bandeja y las métricas con datos) ---
         var now = DateTime.UtcNow;
 
-        AddSeedCase(chileId, "CL", lider.Id, brLiderProvidencia.Id, CaseType.Reclamo,
+        var casoProvidencia = AddSeedCase(chileId, "CL", lider.Id, brLiderProvidencia.Id, CaseType.Reclamo,
             "El lector de tarjetas de la caja 3 no funciona desde ayer.", clienteCl1.Id,
             now.AddDays(-6),
             new (CaseStatus, TimeSpan, int?)[]
@@ -164,8 +167,25 @@ public class InMemoryDataStore
                 (CaseStatus.EnAnalisis, TimeSpan.FromHours(10), internoCl2.Id),
                 (CaseStatus.Resuelto, TimeSpan.FromHours(30), internoCl2.Id)
             },
-            new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (mesaAyudaCl.Id, TimeSpan.FromHours(2)), (logisticaCl.Id, TimeSpan.FromHours(10)) },
-            categoryId: catFallaTecnica.Id);
+            new (int?, TimeSpan)[]
+            {
+                (null, TimeSpan.Zero), (mesaAyudaCl.Id, TimeSpan.FromHours(2)), (logisticaCl.Id, TimeSpan.FromHours(10)),
+                (mesaAyudaCl.Id, TimeSpan.FromHours(30))
+            },
+            categoryId: catFallaTecnica.Id,
+            resolutionComment: "Se reemplazó el lector de tarjetas de la caja 3. Quedó probado y funcionando con normalidad.",
+            resolutionConfirmed: true,
+            resolutionConfirmedByUserId: internoCl1.Id);
+
+        SentEmails.Add(new SentEmail
+        {
+            Id = _nextSentEmailId++,
+            CaseId = casoProvidencia.Id,
+            ToEmail = clienteCl1.Email,
+            Subject = $"Resolución del caso {casoProvidencia.Number}",
+            Body = BuildResolutionEmailBody(casoProvidencia, brLiderProvidencia.Name, casoProvidencia.ResolutionComment!),
+            SentAtUtc = casoProvidencia.ResolutionConfirmedAtUtc!.Value
+        });
 
         // Solicitud de cartelería para dos sucursales a la vez: un caso por sucursal.
         foreach (var branchId in new[] { brBancoChileCentro.Id, brBancoChileNunoa.Id })
@@ -188,6 +208,7 @@ public class InMemoryDataStore
             new (int?, TimeSpan)[] { (null, TimeSpan.Zero) });
 
         // Reclamo por demora en recaudación en dos sucursales a la vez: un caso por sucursal.
+        // Quedan Resueltos pero todavía sin confirmar por Mesa de Ayuda AR (demuestra la cola pendiente).
         foreach (var branchId in new[] { brFarmacityPalermo.Id, brFarmacityRecoleta.Id })
         {
             AddSeedCase(argentinaId, "AR", farmacity.Id, branchId, CaseType.Reclamo,
@@ -200,8 +221,13 @@ public class InMemoryDataStore
                     (CaseStatus.EnAnalisis, TimeSpan.FromHours(20), internoAr2.Id),
                     (CaseStatus.Resuelto, TimeSpan.FromHours(50), internoAr2.Id)
                 },
-                new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (mesaAyudaAr.Id, TimeSpan.FromHours(3)), (seguridadAr.Id, TimeSpan.FromHours(20)) },
-                categoryId: catSinMovimientoCliente.Id);
+                new (int?, TimeSpan)[]
+                {
+                    (null, TimeSpan.Zero), (mesaAyudaAr.Id, TimeSpan.FromHours(3)), (seguridadAr.Id, TimeSpan.FromHours(20)),
+                    (mesaAyudaAr.Id, TimeSpan.FromHours(50))
+                },
+                categoryId: catSinMovimientoCliente.Id,
+                resolutionComment: "Se reforzó la frecuencia de recaudación en la sucursal. Quedamos atentos a que no vuelva a repetirse.");
         }
 
         AddSeedCase(argentinaId, "AR", bancoGalicia.Id, brGaliciaMicrocentro.Id, CaseType.Solicitud,
@@ -222,12 +248,15 @@ public class InMemoryDataStore
             new (int?, TimeSpan)[] { (null, TimeSpan.Zero) });
     }
 
-    private void AddSeedCase(
+    private ServiceCase AddSeedCase(
         int countryId, string countryCode, int clientId, int branchId, CaseType caseType,
         string description, int createdByUserId, DateTime createdAtUtc,
         (CaseStatus Status, TimeSpan Offset, int? ByUserId)[] statusSteps,
         (int? GroupId, TimeSpan Offset)[] groupSteps,
-        int? categoryId = null)
+        int? categoryId = null,
+        string? resolutionComment = null,
+        bool resolutionConfirmed = false,
+        int? resolutionConfirmedByUserId = null)
     {
         var id = _nextCaseId++;
         var serviceCase = new ServiceCase
@@ -243,7 +272,9 @@ public class InMemoryDataStore
             CreatedByUserId = createdByUserId,
             CreatedAtUtc = createdAtUtc,
             Status = statusSteps[^1].Status,
-            AssignedGroupId = groupSteps[^1].GroupId
+            AssignedGroupId = groupSteps[^1].GroupId,
+            ResolutionComment = resolutionComment,
+            ResolutionConfirmed = resolutionConfirmed
         };
 
         foreach (var step in statusSteps)
@@ -265,6 +296,27 @@ public class InMemoryDataStore
             });
         }
 
+        if (resolutionConfirmed)
+        {
+            var confirmedAt = serviceCase.StatusHistory.Last().ChangedAtUtc.AddHours(1);
+            serviceCase.ResolutionConfirmedAtUtc = confirmedAt;
+            serviceCase.ResolutionConfirmedByUserId = resolutionConfirmedByUserId;
+        }
+
         Cases.Add(serviceCase);
+        return serviceCase;
+    }
+
+    private static string BuildResolutionEmailBody(ServiceCase serviceCase, string branchName, string resolutionComment)
+    {
+        var startDate = serviceCase.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+        var endDate = serviceCase.StatusHistory.Last(h => h.Status == CaseStatus.Resuelto).ChangedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+        return
+            $"Caso: {serviceCase.Number}\n" +
+            $"Sucursal: {branchName}\n" +
+            $"Fecha de inicio: {startDate}\n" +
+            $"Fecha de finalización: {endDate}\n" +
+            $"Estado final: {serviceCase.Status.ToDisplayName()}\n\n" +
+            $"Comentario de resolución:\n{resolutionComment}";
     }
 }

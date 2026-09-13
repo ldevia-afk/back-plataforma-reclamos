@@ -44,7 +44,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
             return View("Form", BuildFormViewModel(model));
         }
 
-        _catalogService.CreateResolverGroup(model.Name.Trim(), model.CountryId!.Value, model.MemberUserIds);
+        _catalogService.CreateResolverGroup(model.Name.Trim(), model.CountryId!.Value, model.MemberUserIds, model.IsHelpDesk);
         TempData["Success"] = "Grupo resolutor creado.";
         return RedirectToAction(nameof(Index));
     }
@@ -62,7 +62,8 @@ public class ResolverGroupsController : GestionCasosControllerBase
             Id = group.Id,
             Name = group.Name,
             CountryId = group.CountryId,
-            MemberUserIds = group.MemberUserIds
+            MemberUserIds = group.MemberUserIds,
+            IsHelpDesk = group.IsHelpDesk
         };
         return View("Form", BuildFormViewModel(model));
     }
@@ -79,7 +80,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
             return View("Form", BuildFormViewModel(model));
         }
 
-        _catalogService.UpdateResolverGroup(model.Id, model.Name.Trim(), model.MemberUserIds);
+        _catalogService.UpdateResolverGroup(model.Id, model.Name.Trim(), model.MemberUserIds, model.IsHelpDesk);
         TempData["Success"] = "Grupo resolutor actualizado.";
         return RedirectToAction(nameof(Index));
     }

@@ -24,6 +24,29 @@
     </div>
 </div>
 
+@if (Model.ShowResolutionToClient)
+{
+    <div class="gc-card">
+        <div class="gc-card-title">Resolución del caso</div>
+        <table class="gc-table">
+            <tr><th style="width:180px;">Sucursal</th><td>@Model.BranchName</td></tr>
+            <tr><th>Fecha de inicio</th><td>@Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>
+            <tr><th>Fecha de finalización</th><td>@(Model.ResolvedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-")</td></tr>
+            <tr><th>Estado final</th><td><span class="gc-status gc-status-@Model.Status">@Model.Status.ToDisplayName()</span></td></tr>
+        </table>
+        <div class="gc-form-group" style="margin-top:12px;">
+            <label class="gc-label">Comentario de resolución</label>
+            <p>@Model.ResolutionComment</p>
+        </div>
+    </div>
+}
+else if (Model.Status == CaseStatus.Resuelto && !Model.CanManage)
+{
+    <div class="gc-card">
+        <p class="gc-hint">Tu caso ya fue marcado como resuelto. En breve vas a recibir la confirmación con el detalle de la resolución.</p>
+    </div>
+}
+
 @if (Model.CanManage)
 {
     <div class="gc-card">
@@ -47,14 +70,26 @@
             <button type="submit" class="gc-btn">Derivar</button>
         </form>
 
-        <form asp-controller="InternalCases" asp-action="ChangeStatus" method="post" class="gc-filters" style="margin-top:14px;">
+        <form asp-controller="InternalCases" asp-action="ChangeStatus" method="post" style="margin-top:14px;">
             @Html.AntiForgeryToken()
             <input type="hidden" name="id" value="@Model.Id" />
-            <div class="gc-form-group">
-                <label class="gc-label">Cambiar estado</label>
-                <select name="newStatus" class="gc-select" asp-items="Html.GetEnumSelectList<CaseStatus>()"></select>
+            <div class="gc-filters">
+                <div class="gc-form-group">
+                    <label class="gc-label">Cambiar estado</label>
+                    <select id="new-status-select" name="newStatus" class="gc-select" asp-items="Html.GetEnumSelectList<CaseStatus>()"></select>
+                </div>
             </div>
-            <button type="submit" class="gc-btn">Actualizar estado</button>
+            <div id="resolution-comment-box" class="gc-alert" style="background:#fff4de;color:#92600a;" hidden>
+                <div class="gc-form-group" style="margin-bottom:0;">
+                    <label class="gc-label">Comentario de resolución (obligatorio)</label>
+                    <p class="gc-hint" style="margin-top:0;">
+                        Contale al cliente qué se hizo para resolver el caso. Mesa de Ayuda va a revisar este
+                        mensaje antes de que el cliente pueda verlo.
+                    </p>
+                    <textarea id="resolution-comment-input" name="resolutionComment" class="gc-input" rows="3"></textarea>
+                </div>
+            </div>
+            <button type="submit" class="gc-btn" style="margin-top:10px;">Actualizar estado</button>
         </form>
 
         <form asp-controller="InternalCases" asp-action="AssignCategory" method="post" class="gc-filters" style="margin-top:14px;">
@@ -69,6 +104,42 @@
             <button type="submit" class="gc-btn">Guardar categoría</button>
         </form>
     </div>
+}
+
+@if (Model.CanManage && Model.Status == CaseStatus.Resuelto)
+{
+    if (Model.ResolutionConfirmed)
+    {
+        <div class="gc-card">
+            <div class="gc-card-title">Mensaje al cliente</div>
+            <p class="gc-alert gc-alert-success">
+                Confirmado y enviado al cliente el @Model.ResolutionConfirmedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm").
+            </p>
+            <p>@Model.ResolutionComment</p>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(Model.ResolutionComment))
+    {
+        <div class="gc-card">
+            <div class="gc-card-title">Confirmar mensaje al cliente (Mesa de Ayuda)</div>
+            <p class="gc-hint">
+                Revisá el comentario de resolución del grupo resolutor. Podés editarlo antes de enviarlo:
+                es lo que va a leer el cliente sobre el caso @Model.Number
+                (sucursal @Model.BranchName, inicio @Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                finalización @Model.ResolvedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                estado final @Model.Status.ToDisplayName()).
+            </p>
+            <form asp-controller="InternalCases" asp-action="ConfirmResolution" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="gc-form-group">
+                    <label class="gc-label">Mensaje para el cliente</label>
+                    <textarea name="clientMessage" class="gc-input" rows="4">@Model.ResolutionComment</textarea>
+                </div>
+                <button type="submit" class="gc-btn">Guardar y enviar al cliente</button>
+            </form>
+        </div>
+    }
 }
 
 <div class="gc-card">
@@ -100,3 +171,26 @@
         }
     </ul>
 </div>
+
+@if (Model.CanManage)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var statusSelect = document.getElementById("new-status-select");
+            var commentBox = document.getElementById("resolution-comment-box");
+            var commentInput = document.getElementById("resolution-comment-input");
+            if (!statusSelect || !commentBox || !commentInput) return;
+
+            var resueltoValue = "@((int)CaseStatus.Resuelto)";
+
+            function refresh() {
+                var isResuelto = statusSelect.value === resueltoValue;
+                commentBox.hidden = !isResuelto;
+                commentInput.required = isResuelto;
+            }
+
+            statusSelect.addEventListener("change", refresh);
+            refresh();
+        });
+    </script>
+}

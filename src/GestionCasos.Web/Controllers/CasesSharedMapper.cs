@@ -59,6 +59,11 @@ public static class CasesSharedMapper
             AvailableCategories = canManage
                 ? catalog.GetCategories().Select(cat => new CategoryOption { Id = cat.Id, Name = cat.Name }).ToList()
                 : new List<CategoryOption>(),
+            ResolvedAtUtc = c.StatusHistory.LastOrDefault(h => h.Status == CaseStatus.Resuelto)?.ChangedAtUtc,
+            ResolutionComment = c.ResolutionComment,
+            ResolutionConfirmed = c.ResolutionConfirmed,
+            ResolutionConfirmedAtUtc = c.ResolutionConfirmedAtUtc,
+            AssignedToHelpDesk = group?.IsHelpDesk ?? false,
             StatusHistory = c.StatusHistory
                 .OrderBy(h => h.ChangedAtUtc)
                 .Select(h => new StatusHistoryRow
