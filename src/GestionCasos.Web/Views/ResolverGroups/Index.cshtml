@@ -1,0 +1,31 @@
+@model List<ResolverGroup>
+@{
+    ViewData["Title"] = "Grupos resolutores";
+}
+<h1>Grupos resolutores</h1>
+
+<a class="gc-btn" asp-controller="ResolverGroups" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo grupo</a>
+
+<div class="gc-card">
+    <table class="gc-table">
+        <thead><tr><th>Nombre</th><th>País</th><th>Miembros</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var group in Model)
+            {
+                <tr>
+                    <td>@group.Name</td>
+                    <td>@ViewBag.CountryNames[group.CountryId]</td>
+                    <td>@group.MemberUserIds.Count</td>
+                    <td>
+                        <a asp-controller="ResolverGroups" asp-action="Edit" asp-route-id="@group.Id">Editar</a>
+                        &nbsp;·&nbsp;
+                        <form asp-controller="ResolverGroups" asp-action="Delete" asp-route-id="@group.Id" method="post" class="gc-inline-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="gc-link-button">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

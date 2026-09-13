@@ -1,0 +1,76 @@
+@model CaseCreateViewModel
+@{
+    ViewData["Title"] = "Nuevo caso";
+}
+<h1>Nueva solicitud, consulta o reclamo</h1>
+
+<div class="gc-card">
+    <form asp-controller="Cases" asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="gc-form-group">
+            <label class="gc-label" for="client-select">Cliente que representás</label>
+            <select id="client-select" name="ClientId" class="gc-select" asp-items="Model.AvailableClients.Select(c => new SelectListItem(c.ClientName, c.ClientId.ToString()))">
+                <option value="">-- Seleccioná un cliente --</option>
+            </select>
+            <span asp-validation-for="ClientId" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
+            <label class="gc-label">Sucursales / puntos (podés elegir varias)</label>
+            @foreach (var client in Model.AvailableClients)
+            {
+                <div data-branch-group="@client.ClientId" hidden style="margin-bottom:8px;">
+                    <button type="button" class="gc-btn-secondary gc-btn" style="margin-bottom:8px;padding:4px 10px;font-size:12px;" data-select-all-branches="@client.ClientId">
+                        Seleccionar todas
+                    </button>
+                    <div class="gc-checkbox-list">
+                        @foreach (var branch in client.Branches)
+                        {
+                            <label class="gc-checkbox-item">
+                                <input type="checkbox" name="BranchIds" value="@branch.Id" disabled
+                                       checked="@(Model.BranchIds.Contains(branch.Id))" />
+                                @branch.Name
+                            </label>
+                        }
+                        @if (client.Branches.Count == 0)
+                        {
+                            <span class="gc-hint">Este cliente todavía no tiene sucursales cargadas.</span>
+                        }
+                    </div>
+                </div>
+            }
+            <span asp-validation-for="BranchIds" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
+            <label class="gc-label" for="category-select">Categoría</label>
+            <select id="category-select" name="CategoryId" class="gc-select" asp-items="Model.AvailableCategories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
+                <option value="">-- Seleccioná una categoría --</option>
+            </select>
+            <span asp-validation-for="CategoryId" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
+            <label class="gc-label" for="description">Detalle</label>
+            <textarea id="description" name="Description" class="gc-input" rows="5" placeholder="Contanos qué necesitás...">@Model.Description</textarea>
+            <span asp-validation-for="Description" class="field-validation-error"></span>
+        </div>
+
+        <button type="submit" class="gc-btn">Enviar</button>
+        <a class="gc-btn gc-btn-secondary" asp-controller="Cases" asp-action="Index">Cancelar</a>
+    </form>
+</div>
+
+<script>
+    // Preselecciona el cliente elegido al recargar el form con errores de validación.
+    document.addEventListener("DOMContentLoaded", function () {
+        var preselect = @Html.Raw(Model.ClientId?.ToString() ?? "null");
+        if (preselect !== null) {
+            var select = document.getElementById("client-select");
+            select.value = preselect;
+            select.dispatchEvent(new Event("change"));
+        }
+    });
+</script>

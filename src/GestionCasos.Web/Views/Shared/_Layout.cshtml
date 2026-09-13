@@ -1,0 +1,101 @@
+@{
+    var currentUser = ViewBag.CurrentUser as AppUser;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Gestión de Casos</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="gc-shell">
+        <aside class="gc-sidebar" id="gc-sidebar">
+            <div class="gc-brand">
+                <span class="gc-brand-badge">GC</span>
+                <span class="gc-brand-name">Gestión de Casos</span>
+            </div>
+
+            <nav class="gc-nav">
+                <a class="gc-nav-link" asp-controller="Home" asp-action="Index">
+                    <span class="gc-nav-icon">🏠</span> Inicio
+                </a>
+
+                @if (currentUser?.ProfileType == UserProfileType.Cliente)
+                {
+                    <div class="gc-nav-section">Mis casos</div>
+                    <a class="gc-nav-link" asp-controller="Cases" asp-action="Create">
+                        <span class="gc-nav-icon">➕</span> Nueva solicitud / consulta / reclamo
+                    </a>
+                    <a class="gc-nav-link" asp-controller="Cases" asp-action="Index">
+                        <span class="gc-nav-icon">📋</span> Mis casos
+                    </a>
+                }
+
+                @if (currentUser?.ProfileType == UserProfileType.Interno)
+                {
+                    <div class="gc-nav-section">Gestión</div>
+                    <a class="gc-nav-link" asp-controller="InternalCases" asp-action="Index">
+                        <span class="gc-nav-icon">📥</span> Bandeja de casos
+                    </a>
+                    <a class="gc-nav-link" asp-controller="Metrics" asp-action="Index">
+                        <span class="gc-nav-icon">📊</span> Métricas
+                    </a>
+
+                    <div class="gc-nav-section">Configuración</div>
+                    <a class="gc-nav-link" asp-controller="Categories" asp-action="Index">
+                        <span class="gc-nav-icon">🏷️</span> Categorías
+                    </a>
+                    <a class="gc-nav-link" asp-controller="ResolverGroups" asp-action="Index">
+                        <span class="gc-nav-icon">👥</span> Grupos resolutores
+                    </a>
+                    <a class="gc-nav-link" asp-controller="Clients" asp-action="Index">
+                        <span class="gc-nav-icon">🏢</span> Clientes y sucursales
+                    </a>
+                    <a class="gc-nav-link" asp-controller="Users" asp-action="Index">
+                        <span class="gc-nav-icon">🧑‍💼</span> Usuarios
+                    </a>
+                }
+            </nav>
+        </aside>
+
+        <div class="gc-main">
+            <header class="gc-topbar">
+                <button class="gc-sidebar-toggle" id="gc-sidebar-toggle" type="button" aria-label="Mostrar/ocultar menú">☰</button>
+                <div class="gc-topbar-spacer"></div>
+                @if (currentUser != null)
+                {
+                    <div class="gc-user-chip">
+                        <span class="gc-user-name">@currentUser.Name</span>
+                        <span class="gc-user-badge">@(currentUser.ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno")</span>
+                        <form asp-controller="Session" asp-action="Clear" method="post" class="gc-inline-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="gc-link-button">Cambiar usuario</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <a asp-controller="Session" asp-action="Switch" class="gc-link-button">Elegir usuario de prueba</a>
+                }
+            </header>
+
+            <main class="gc-content">
+                @if (TempData["Success"] != null)
+                {
+                    <div class="gc-alert gc-alert-success">@TempData["Success"]</div>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="gc-alert gc-alert-error">@TempData["Error"]</div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

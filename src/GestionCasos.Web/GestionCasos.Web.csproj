@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>GestionCasos.Web</RootNamespace>
+    <UserSecretsId>a9f8f4a2-6f0a-4a49-9c2e-3b8d3a3d9b21</UserSecretsId>
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+
+</Project>

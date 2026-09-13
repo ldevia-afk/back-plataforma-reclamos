@@ -1,0 +1,30 @@
+@model List<CaseListItemViewModel>
+<table class="gc-table">
+    <thead>
+        <tr>
+            <th>Número</th>
+            <th>Cliente</th>
+            <th>Sucursales</th>
+            <th>Categoría</th>
+            <th>Estado</th>
+            <th>Grupo</th>
+            <th>Creado</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Number</td>
+                <td>@item.ClientName</td>
+                <td>@item.BranchNames</td>
+                <td>@item.CategoryName</td>
+                <td><span class="gc-status gc-status-@item.Status">@item.Status.ToDisplayName()</span></td>
+                <td>@(item.ResolverGroupName ?? "Sin asignar")</td>
+                <td>@item.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                <td><a asp-controller="InternalCases" asp-action="Details" asp-route-id="@item.Id">Gestionar</a></td>
+            </tr>
+        }
+    </tbody>
+</table>

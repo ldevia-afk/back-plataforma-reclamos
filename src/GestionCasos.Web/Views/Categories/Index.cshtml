@@ -1,0 +1,41 @@
+@model List<Category>
+@{
+    ViewData["Title"] = "Categorías";
+}
+<h1>Categorías</h1>
+
+<div class="gc-card">
+    <div class="gc-card-title">Agregar categoría</div>
+    <form asp-controller="Categories" asp-action="Create" method="post" class="gc-filters">
+        @Html.AntiForgeryToken()
+        <div class="gc-form-group">
+            <label class="gc-label">Nombre</label>
+            <input class="gc-input" name="Name" placeholder="Ej: Incidente de seguridad" required />
+        </div>
+        <button type="submit" class="gc-btn">Agregar</button>
+    </form>
+</div>
+
+<div class="gc-card">
+    <table class="gc-table">
+        <thead><tr><th>Nombre</th><th>Origen</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var category in Model)
+            {
+                <tr>
+                    <td>@category.Name</td>
+                    <td>@(category.IsSystemDefined ? "Sistema" : "Agregada por el equipo interno")</td>
+                    <td>
+                        @if (!category.IsSystemDefined)
+                        {
+                            <form asp-controller="Categories" asp-action="Delete" asp-route-id="@category.Id" method="post" class="gc-inline-form">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="gc-link-button">Eliminar</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

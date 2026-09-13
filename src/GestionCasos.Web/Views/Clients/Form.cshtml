@@ -1,0 +1,71 @@
+@model ClientFormViewModel
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Nuevo cliente" : "Editar cliente";
+}
+<h1>@ViewData["Title"]</h1>
+
+<div class="gc-card">
+    <form asp-controller="Clients" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="gc-form-group">
+            <label class="gc-label">Nombre</label>
+            <input asp-for="Name" class="gc-input" />
+            <span asp-validation-for="Name" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
+            <label class="gc-label">País</label>
+            <select asp-for="CountryId" class="gc-select" asp-items="Model.AvailableCountries.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
+                <option value="">-- Seleccioná --</option>
+            </select>
+            <span asp-validation-for="CountryId" class="field-validation-error"></span>
+        </div>
+
+        <button type="submit" class="gc-btn">Guardar</button>
+        <a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Index">Volver</a>
+    </form>
+</div>
+
+@if (Model.Id != 0)
+{
+    <div class="gc-card">
+        <div class="gc-card-title">Sucursales / puntos</div>
+
+        <form asp-controller="Clients" asp-action="AddBranch" method="post" class="gc-filters">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="clientId" value="@Model.Id" />
+            <div class="gc-form-group">
+                <label class="gc-label">Nueva sucursal</label>
+                <input class="gc-input" name="newBranchName" placeholder="Ej: Sucursal Centro" required />
+            </div>
+            <button type="submit" class="gc-btn">Agregar</button>
+        </form>
+
+        <table class="gc-table" style="margin-top:16px;">
+            <thead><tr><th>Nombre</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var branch in Model.Branches)
+                {
+                    <tr>
+                        <td>@branch.Name</td>
+                        <td>
+                            <form asp-controller="Clients" asp-action="DeleteBranch" method="post" class="gc-inline-form">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="branchId" value="@branch.Id" />
+                                <input type="hidden" name="clientId" value="@Model.Id" />
+                                <button type="submit" class="gc-link-button">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Branches.Count == 0)
+                {
+                    <tr><td colspan="2" class="gc-hint">Todavía no hay sucursales cargadas.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

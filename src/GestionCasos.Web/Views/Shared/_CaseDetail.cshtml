@@ -1,0 +1,76 @@
+@model CaseDetailViewModel
+
+<h1>Caso @Model.Number</h1>
+
+<div class="gc-card">
+    <table class="gc-table">
+        <tr><th style="width:180px;">Cliente</th><td>@Model.ClientName</td></tr>
+        <tr><th>País</th><td>@Model.CountryName</td></tr>
+        <tr><th>Sucursales</th><td>@string.Join(", ", Model.BranchNames)</td></tr>
+        <tr><th>Categoría</th><td>@Model.CategoryName</td></tr>
+        <tr><th>Estado</th><td><span class="gc-status gc-status-@Model.Status">@Model.Status.ToDisplayName()</span></td></tr>
+        <tr><th>Grupo resolutor</th><td>@(Model.ResolverGroupName ?? "Sin asignar")</td></tr>
+        <tr><th>Creado por</th><td>@Model.CreatedByName</td></tr>
+        <tr><th>Fecha de creación</th><td>@Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>
+    </table>
+
+    <div class="gc-form-group" style="margin-top:16px;">
+        <label class="gc-label">Detalle</label>
+        <p>@Model.Description</p>
+    </div>
+</div>
+
+@if (Model.CanManage)
+{
+    <div class="gc-card">
+        <div class="gc-card-title">Gestión del caso</div>
+
+        <form asp-controller="InternalCases" asp-action="AssignGroup" method="post" class="gc-filters">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="gc-form-group">
+                <label class="gc-label">Derivar a grupo resolutor</label>
+                <select name="resolverGroupId" class="gc-select" asp-items="Model.AvailableGroups.Select(g => new SelectListItem(g.Name, g.Id.ToString()))">
+                    <option value="">-- Sin grupo --</option>
+                </select>
+            </div>
+            <button type="submit" class="gc-btn">Derivar</button>
+        </form>
+
+        <form asp-controller="InternalCases" asp-action="ChangeStatus" method="post" class="gc-filters" style="margin-top:14px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="gc-form-group">
+                <label class="gc-label">Cambiar estado</label>
+                <select name="newStatus" class="gc-select" asp-items="Html.GetEnumSelectList<CaseStatus>()"></select>
+            </div>
+            <button type="submit" class="gc-btn">Actualizar estado</button>
+        </form>
+    </div>
+}
+
+<div class="gc-card">
+    <div class="gc-card-title">Historial de estados</div>
+    <ul class="gc-timeline">
+        @foreach (var h in Model.StatusHistory)
+        {
+            <li>
+                <strong>@h.Status.ToDisplayName()</strong> — @h.ChangedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                @if (h.ChangedByName != null) { <text> · @h.ChangedByName</text> }
+            </li>
+        }
+    </ul>
+</div>
+
+<div class="gc-card">
+    <div class="gc-card-title">Historial de derivaciones</div>
+    <ul class="gc-timeline">
+        @foreach (var h in Model.GroupHistory)
+        {
+            <li>
+                <strong>@h.GroupName</strong> — @h.ChangedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                @if (h.ChangedByName != null) { <text> · @h.ChangedByName</text> }
+            </li>
+        }
+    </ul>
+</div>

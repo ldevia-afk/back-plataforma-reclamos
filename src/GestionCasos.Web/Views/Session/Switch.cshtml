@@ -1,0 +1,55 @@
+@model SwitchUserViewModel
+@{
+    ViewData["Title"] = "Elegir usuario";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Elegir usuario - Gestión de Casos</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body style="background:var(--gc-bg);">
+    <div style="max-width:900px;margin:40px auto;padding:0 20px;">
+        <h1>Gestión de Casos — Selector de usuario de prueba</h1>
+        <p class="gc-hint">
+            Este módulo no incluye login: se integra con la sesión de la plataforma existente.
+            Para poder probarlo, elegí acá qué usuario simular.
+        </p>
+
+        <h2>Perfil Cliente</h2>
+        <div class="gc-user-picker-grid">
+            @foreach (var user in Model.ClientUsers)
+            {
+                <form asp-controller="Session" asp-action="SetUser" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="userId" value="@user.Id" />
+                    <button type="submit" class="gc-user-picker-card">
+                        <div class="gc-user-picker-name">@user.Name</div>
+                        <div class="gc-user-picker-meta">@user.Email</div>
+                        <div class="gc-user-picker-meta">@Model.CountryNamesById[user.CountryId]</div>
+                    </button>
+                </form>
+            }
+        </div>
+
+        <h2 style="margin-top:30px;">Perfil Interno</h2>
+        <div class="gc-user-picker-grid">
+            @foreach (var user in Model.InternalUsers)
+            {
+                <form asp-controller="Session" asp-action="SetUser" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="userId" value="@user.Id" />
+                    <button type="submit" class="gc-user-picker-card">
+                        <div class="gc-user-picker-name">@user.Name</div>
+                        <div class="gc-user-picker-meta">@user.Email</div>
+                        <div class="gc-user-picker-meta">@Model.CountryNamesById[user.CountryId] · @(user.HasAllBranches ? "Todas las sucursales" : "Sucursales asignadas")</div>
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+</body>
+</html>

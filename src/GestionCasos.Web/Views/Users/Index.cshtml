@@ -1,0 +1,42 @@
+@model List<AppUser>
+@{
+    ViewData["Title"] = "Usuarios";
+}
+<h1>Usuarios</h1>
+
+<a class="gc-btn" asp-controller="Users" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo usuario</a>
+
+<div class="gc-card">
+    <table class="gc-table">
+        <thead><tr><th>Nombre</th><th>Email</th><th>Perfil</th><th>País</th><th>Alcance</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var user in Model)
+            {
+                <tr>
+                    <td>@user.Name</td>
+                    <td>@user.Email</td>
+                    <td>@(user.ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno")</td>
+                    <td>@ViewBag.CountryNames[user.CountryId]</td>
+                    <td>
+                        @if (user.ProfileType == UserProfileType.Cliente)
+                        {
+                            @user.AssignedClientIds.Count <text> cliente(s)</text>
+                        }
+                        else
+                        {
+                            @(user.HasAllBranches ? "Todas las sucursales" : $"{user.AssignedBranchIds.Count} sucursal(es)")
+                        }
+                    </td>
+                    <td>
+                        <a asp-controller="Users" asp-action="Edit" asp-route-id="@user.Id">Editar</a>
+                        &nbsp;·&nbsp;
+                        <form asp-controller="Users" asp-action="Delete" asp-route-id="@user.Id" method="post" class="gc-inline-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="gc-link-button">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,123 @@
+@model MetricsViewModel
+@{
+    ViewData["Title"] = "Métricas";
+}
+<h1>Métricas y estadísticas</h1>
+
+<form method="get" class="gc-filters gc-card">
+    <div class="gc-form-group">
+        <label class="gc-label">País</label>
+        <select asp-for="SelectedCountryId" class="gc-select" asp-items="Model.Countries.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
+            <option value="">Todos</option>
+        </select>
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Categoría</label>
+        <select asp-for="SelectedCategoryId" class="gc-select" asp-items="Model.Categories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
+            <option value="">Todas</option>
+        </select>
+    </div>
+</form>
+
+<div class="gc-metric-grid">
+    <div class="gc-metric-card">
+        <div class="gc-metric-value">@Model.InitiatedCount</div>
+        <div class="gc-metric-label">Casos iniciados</div>
+    </div>
+    <div class="gc-metric-card">
+        <div class="gc-metric-value">@Model.ResolvedCount</div>
+        <div class="gc-metric-label">Resueltos</div>
+    </div>
+    <div class="gc-metric-card">
+        <div class="gc-metric-value">@Model.PendingCount</div>
+        <div class="gc-metric-label">Pendientes</div>
+    </div>
+    <div class="gc-metric-card">
+        <div class="gc-metric-value">@(Model.AvgResolutionHours.HasValue ? Math.Round(Model.AvgResolutionHours.Value, 1) + " hs" : "—")</div>
+        <div class="gc-metric-label">Tiempo promedio de resolución</div>
+    </div>
+    <div class="gc-metric-card">
+        <div class="gc-metric-value">@(Model.AvgHandoffHours.HasValue ? Math.Round(Model.AvgHandoffHours.Value, 1) + " hs" : "—")</div>
+        <div class="gc-metric-label">Tiempo promedio entre grupos</div>
+    </div>
+</div>
+
+<div class="gc-card">
+    <div class="gc-card-title">Casos por estado</div>
+    @foreach (var item in Model.CountsByStatus)
+    {
+        <div class="gc-bar-row">
+            <div class="gc-bar-label">@item.Status.ToDisplayName()</div>
+            <div class="gc-bar-track"><div class="gc-bar-fill" style="width:@(item.Percentage)%"></div></div>
+            <div class="gc-bar-value">@item.Count (@item.Percentage%)</div>
+        </div>
+    }
+</div>
+
+<div class="gc-card">
+    <div class="gc-card-title">Casos por categoría</div>
+    @if (Model.CountsByCategory.Count == 0)
+    {
+        <p class="gc-hint">No hay datos todavía.</p>
+    }
+    else
+    {
+        foreach (var item in Model.CountsByCategory)
+        {
+            <div class="gc-bar-row">
+                <div class="gc-bar-label">@item.CategoryName</div>
+                <div class="gc-bar-track"><div class="gc-bar-fill" style="width:@(item.Percentage)%"></div></div>
+                <div class="gc-bar-value">@item.Count (@item.Percentage%)</div>
+            </div>
+        }
+    }
+</div>
+
+<div class="gc-card">
+    <div class="gc-card-title">Tiempo promedio para cambiar de estado</div>
+    @if (Model.AvgHoursByStatus.Count == 0)
+    {
+        <p class="gc-hint">Todavía no hay suficientes cambios de estado registrados.</p>
+    }
+    else
+    {
+        <table class="gc-table">
+            <thead><tr><th>Desde estado</th><th>Horas promedio hasta el siguiente cambio</th><th>Muestras</th></tr></thead>
+            <tbody>
+                @foreach (var item in Model.AvgHoursByStatus)
+                {
+                    <tr>
+                        <td>@item.Status.ToDisplayName()</td>
+                        <td>@item.AvgHours hs</td>
+                        <td>@item.SampleCount</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+<div class="gc-card">
+    <div class="gc-card-title">Tiempo promedio de un grupo resolutor a otro</div>
+    @if (Model.GroupTransitions.Count == 0)
+    {
+        <p class="gc-hint">Todavía no hay derivaciones entre grupos registradas.</p>
+    }
+    else
+    {
+        <table class="gc-table">
+            <thead><tr><th>Desde</th><th>Hacia</th><th>Horas promedio</th><th>Casos</th></tr></thead>
+            <tbody>
+                @foreach (var item in Model.GroupTransitions)
+                {
+                    <tr>
+                        <td>@item.FromGroupName</td>
+                        <td>@item.ToGroupName</td>
+                        <td>@item.AvgHours hs</td>
+                        <td>@item.Count</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

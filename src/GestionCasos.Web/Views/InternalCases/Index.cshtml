@@ -1,0 +1,55 @@
+@model InternalInboxViewModel
+@{
+    ViewData["Title"] = "Bandeja de casos";
+}
+<h1>Bandeja de casos</h1>
+
+<form method="get" class="gc-filters gc-card">
+    <div class="gc-form-group">
+        <label class="gc-label">Categoría</label>
+        <select asp-for="FilterCategoryId" class="gc-select" asp-items="Model.Categories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
+            <option value="">Todas</option>
+        </select>
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Estado</label>
+        <select asp-for="FilterStatus" class="gc-select" asp-items="Html.GetEnumSelectList<CaseStatus>()" onchange="this.form.submit()">
+            <option value="">Todos</option>
+        </select>
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Grupo resolutor</label>
+        <select asp-for="FilterGroupId" class="gc-select" asp-items="Model.ResolverGroups.Select(g => new SelectListItem(g.Name, g.Id.ToString()))" onchange="this.form.submit()">
+            <option value="">Todos</option>
+        </select>
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Vista</label>
+        <select name="groupByCategory" class="gc-select" onchange="this.form.submit()">
+            <option value="true" selected="@(Model.GroupByCategory ? "selected" : null)">Agrupada por categoría</option>
+            <option value="false" selected="@(!Model.GroupByCategory ? "selected" : null)">Lista simple</option>
+        </select>
+    </div>
+    <noscript><button type="submit" class="gc-btn">Filtrar</button></noscript>
+</form>
+
+@if (Model.AllCases.Count == 0)
+{
+    <div class="gc-card"><p class="gc-hint">No hay casos que coincidan con el filtro.</p></div>
+}
+else if (Model.GroupByCategory)
+{
+    foreach (var group in Model.GroupedByCategory)
+    {
+        <div class="gc-category-block">
+            <div class="gc-category-heading">@group.Key (@group.Count())</div>
+            @await Html.PartialAsync("_CaseListTable", group.ToList())
+        </div>
+    }
+}
+else
+{
+    <div class="gc-card">
+        @await Html.PartialAsync("_CaseListTable", Model.AllCases)
+    </div>
+}

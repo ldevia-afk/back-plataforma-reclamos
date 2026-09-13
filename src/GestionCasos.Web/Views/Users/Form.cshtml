@@ -1,0 +1,128 @@
+@model UserFormViewModel
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Nuevo usuario" : "Editar usuario";
+}
+<h1>@ViewData["Title"]</h1>
+
+<div class="gc-card">
+    <form asp-controller="Users" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+        <div class="gc-form-group">
+            <label class="gc-label">Nombre</label>
+            <input asp-for="Name" class="gc-input" />
+            <span asp-validation-for="Name" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
+            <label class="gc-label">Email</label>
+            <input asp-for="Email" class="gc-input" type="email" />
+            <span asp-validation-for="Email" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
+            <label class="gc-label">Perfil</label>
+            <select id="profile-select" asp-for="ProfileType" class="gc-select" asp-items="Html.GetEnumSelectList<UserProfileType>()">
+                <option value="">-- Seleccioná --</option>
+            </select>
+            <span asp-validation-for="ProfileType" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
+            <label class="gc-label">País</label>
+            <select id="country-select" asp-for="CountryId" class="gc-select" asp-items="Model.AvailableCountries.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
+                <option value="">-- Seleccioná --</option>
+            </select>
+            <span asp-validation-for="CountryId" class="field-validation-error"></span>
+        </div>
+
+        <div id="section-cliente" class="gc-form-group">
+            <label class="gc-label">Clientes que representa</label>
+            <div class="gc-checkbox-list">
+                @foreach (var client in Model.AvailableClients)
+                {
+                    <label class="gc-checkbox-item" data-country="@client.CountryId">
+                        <input type="checkbox" name="AssignedClientIds" value="@client.Id" checked="@(Model.AssignedClientIds.Contains(client.Id))" />
+                        @client.Name
+                    </label>
+                }
+            </div>
+        </div>
+
+        <div id="section-interno">
+            <div class="gc-form-group">
+                <label class="gc-checkbox-item">
+                    <input type="checkbox" id="all-branches-check" asp-for="HasAllBranches" />
+                    Tiene acceso a todas las sucursales del país
+                </label>
+            </div>
+
+            <div class="gc-form-group" id="branches-picker">
+                <label class="gc-label">Sucursales asignadas</label>
+                <div class="gc-checkbox-list">
+                    @foreach (var branch in Model.AvailableBranches)
+                    {
+                        <label class="gc-checkbox-item" data-country="@branch.CountryId">
+                            <input type="checkbox" name="AssignedBranchIds" value="@branch.Id" checked="@(Model.AssignedBranchIds.Contains(branch.Id))" />
+                            @branch.Name
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div class="gc-form-group">
+                <label class="gc-label">Grupos resolutores</label>
+                <div class="gc-checkbox-list">
+                    @foreach (var group in Model.AvailableResolverGroups)
+                    {
+                        <label class="gc-checkbox-item" data-country="@group.CountryId">
+                            <input type="checkbox" name="ResolverGroupIds" value="@group.Id" checked="@(Model.ResolverGroupIds.Contains(group.Id))" />
+                            @group.Name
+                        </label>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="gc-btn">Guardar</button>
+        <a class="gc-btn gc-btn-secondary" asp-controller="Users" asp-action="Index">Cancelar</a>
+    </form>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var profileSelect = document.getElementById("profile-select");
+        var countrySelect = document.getElementById("country-select");
+        var sectionCliente = document.getElementById("section-cliente");
+        var sectionInterno = document.getElementById("section-interno");
+        var allBranchesCheck = document.getElementById("all-branches-check");
+        var branchesPicker = document.getElementById("branches-picker");
+
+        function refreshProfileSections() {
+            var isCliente = profileSelect.value === "0"; // UserProfileType.Cliente = 0
+            sectionCliente.hidden = !isCliente;
+            sectionInterno.hidden = isCliente;
+        }
+
+        function refreshCountryVisibility() {
+            var countryId = countrySelect.value;
+            document.querySelectorAll("[data-country]").forEach(function (item) {
+                item.hidden = item.getAttribute("data-country") !== countryId;
+            });
+        }
+
+        function refreshAllBranches() {
+            branchesPicker.hidden = allBranchesCheck.checked;
+        }
+
+        profileSelect.addEventListener("change", refreshProfileSections);
+        countrySelect.addEventListener("change", refreshCountryVisibility);
+        allBranchesCheck.addEventListener("change", refreshAllBranches);
+
+        refreshProfileSections();
+        refreshCountryVisibility();
+        refreshAllBranches();
+    });
+</script>

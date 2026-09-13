@@ -1,0 +1,31 @@
+@model List<Client>
+@{
+    ViewData["Title"] = "Clientes y sucursales";
+}
+<h1>Clientes y sucursales</h1>
+
+<a class="gc-btn" asp-controller="Clients" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo cliente</a>
+
+<div class="gc-card">
+    <table class="gc-table">
+        <thead><tr><th>Nombre</th><th>País</th><th>Sucursales</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var client in Model)
+            {
+                <tr>
+                    <td>@client.Name</td>
+                    <td>@ViewBag.CountryNames[client.CountryId]</td>
+                    <td>@ViewBag.BranchCounts[client.Id]</td>
+                    <td>
+                        <a asp-controller="Clients" asp-action="Edit" asp-route-id="@client.Id">Editar / sucursales</a>
+                        &nbsp;·&nbsp;
+                        <form asp-controller="Clients" asp-action="Delete" asp-route-id="@client.Id" method="post" class="gc-inline-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="gc-link-button">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

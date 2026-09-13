@@ -1,0 +1,6 @@
+@model CaseDetailViewModel
+@{
+    ViewData["Title"] = $"Caso {Model.Number}";
+}
+<a asp-controller="InternalCases" asp-action="Index">&larr; Volver a la bandeja</a>
+@await Html.PartialAsync("_CaseDetail", Model)
