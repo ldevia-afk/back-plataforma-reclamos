@@ -7,9 +7,13 @@
         <tr><th style="width:180px;">Cliente</th><td>@Model.ClientName</td></tr>
         <tr><th>País</th><td>@Model.CountryName</td></tr>
         <tr><th>Sucursal</th><td>@Model.BranchName</td></tr>
-        <tr><th>Categoría</th><td>@Model.CategoryName</td></tr>
+        <tr><th>Tipo</th><td>@Model.Type.ToDisplayName()</td></tr>
         <tr><th>Estado</th><td><span class="gc-status gc-status-@Model.Status">@Model.Status.ToDisplayName()</span></td></tr>
         <tr><th>Grupo resolutor</th><td>@(Model.ResolverGroupName ?? "Sin asignar")</td></tr>
+        @if (Model.CanManage)
+        {
+            <tr><th>Categoría</th><td>@(Model.CategoryName ?? "Sin categorizar")</td></tr>
+        }
         <tr><th>Creado por</th><td>@Model.CreatedByName</td></tr>
         <tr><th>Fecha de creación</th><td>@Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td></tr>
     </table>
@@ -51,6 +55,18 @@
                 <select name="newStatus" class="gc-select" asp-items="Html.GetEnumSelectList<CaseStatus>()"></select>
             </div>
             <button type="submit" class="gc-btn">Actualizar estado</button>
+        </form>
+
+        <form asp-controller="InternalCases" asp-action="AssignCategory" method="post" class="gc-filters" style="margin-top:14px;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="gc-form-group">
+                <label class="gc-label">Categorizar caso</label>
+                <select asp-for="CategoryId" class="gc-select" asp-items="Model.AvailableCategories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
+                    <option value="">-- Sin categorizar --</option>
+                </select>
+            </div>
+            <button type="submit" class="gc-btn">Guardar categoría</button>
         </form>
     </div>
 }

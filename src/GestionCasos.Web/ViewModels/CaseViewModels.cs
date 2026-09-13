@@ -19,7 +19,6 @@ public class BranchOption
 public class CaseCreateViewModel
 {
     public List<ClientWithBranchesOption> AvailableClients { get; set; } = new();
-    public List<CategoryOption> AvailableCategories { get; set; } = new();
 
     [Required(ErrorMessage = "Seleccioná el cliente.")]
     public int? ClientId { get; set; }
@@ -28,8 +27,8 @@ public class CaseCreateViewModel
     [MinLength(1, ErrorMessage = "Seleccioná al menos una sucursal.")]
     public List<int> BranchIds { get; set; } = new();
 
-    [Required(ErrorMessage = "Seleccioná una categoría.")]
-    public int? CategoryId { get; set; }
+    [Required(ErrorMessage = "Seleccioná el tipo de caso.")]
+    public CaseType? Type { get; set; }
 
     [Required(ErrorMessage = "Contanos qué necesitás.")]
     [StringLength(2000, MinimumLength = 5, ErrorMessage = "El detalle debe tener entre 5 y 2000 caracteres.")]
@@ -42,7 +41,9 @@ public class CaseListItemViewModel
     public string Number { get; set; } = string.Empty;
     public string ClientName { get; set; } = string.Empty;
     public string BranchName { get; set; } = string.Empty;
-    public string CategoryName { get; set; } = string.Empty;
+    public CaseType Type { get; set; }
+    /// <summary>Categoría interna asignada; null si el perfil interno todavía no la categorizó.</summary>
+    public string? CategoryName { get; set; }
     public CaseStatus Status { get; set; }
     public string? ResolverGroupName { get; set; }
     public DateTime CreatedAtUtc { get; set; }
@@ -56,7 +57,9 @@ public class CaseDetailViewModel
     public string ClientName { get; set; } = string.Empty;
     public string CountryName { get; set; } = string.Empty;
     public string BranchName { get; set; } = string.Empty;
-    public string CategoryName { get; set; } = string.Empty;
+    public CaseType Type { get; set; }
+    public int? CategoryId { get; set; }
+    public string? CategoryName { get; set; }
     public string Description { get; set; } = string.Empty;
     public CaseStatus Status { get; set; }
     public string CreatedByName { get; set; } = string.Empty;
@@ -65,6 +68,7 @@ public class CaseDetailViewModel
 
     public bool CanManage { get; set; }
     public List<ResolverGroupOption> AvailableGroups { get; set; } = new();
+    public List<CategoryOption> AvailableCategories { get; set; } = new();
 
     public List<StatusHistoryRow> StatusHistory { get; set; } = new();
     public List<GroupHistoryRow> GroupHistory { get; set; } = new();
@@ -94,13 +98,14 @@ public class GroupHistoryRow
 public class InternalInboxViewModel
 {
     public List<CaseListItemViewModel> AllCases { get; set; } = new();
-    public List<IGrouping<string, CaseListItemViewModel>> GroupedByCategory { get; set; } = new();
+    public List<IGrouping<string, CaseListItemViewModel>> GroupedByType { get; set; } = new();
 
     public List<CategoryOption> Categories { get; set; } = new();
     public List<ResolverGroupOption> ResolverGroups { get; set; } = new();
 
+    public CaseType? FilterType { get; set; }
     public int? FilterCategoryId { get; set; }
     public CaseStatus? FilterStatus { get; set; }
     public int? FilterGroupId { get; set; }
-    public bool GroupByCategory { get; set; }
+    public bool GroupByType { get; set; }
 }

@@ -128,7 +128,7 @@ public class CatalogService : ICatalogService
 
     public List<Category> GetCategories()
     {
-        lock (_store.Lock) return _store.Categories.OrderBy(c => c.IsSystemDefined ? 0 : 1).ThenBy(c => c.Name).ToList();
+        lock (_store.Lock) return _store.Categories.OrderBy(c => c.Name).ToList();
     }
 
     public Category? GetCategory(int id)
@@ -140,7 +140,7 @@ public class CatalogService : ICatalogService
     {
         lock (_store.Lock)
         {
-            var category = new Category { Id = _store.NextCategoryId(), Name = name, IsSystemDefined = false };
+            var category = new Category { Id = _store.NextCategoryId(), Name = name };
             _store.Categories.Add(category);
             return category;
         }
@@ -150,9 +150,11 @@ public class CatalogService : ICatalogService
     {
         lock (_store.Lock)
         {
-            var category = _store.Categories.FirstOrDefault(c => c.Id == id);
-            if (category == null || category.IsSystemDefined) return;
-            _store.Categories.Remove(category);
+            _store.Categories.RemoveAll(c => c.Id == id);
+            foreach (var c in _store.Cases.Where(c => c.CategoryId == id))
+            {
+                c.CategoryId = null;
+            }
         }
     }
 

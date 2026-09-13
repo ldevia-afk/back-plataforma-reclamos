@@ -14,11 +14,11 @@ public class MetricsController : GestionCasosControllerBase
         _metricsService = metricsService;
     }
 
-    public IActionResult Index(int? selectedCountryId, int? selectedCategoryId)
+    public IActionResult Index(int? selectedCountryId, CaseType? selectedType, int? selectedCategoryId)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        return View(_metricsService.BuildMetrics(selectedCountryId, selectedCategoryId));
+        return View(_metricsService.BuildMetrics(selectedCountryId, selectedType, selectedCategoryId));
     }
 }

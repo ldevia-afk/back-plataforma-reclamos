@@ -13,6 +13,7 @@ public class MetricsViewModel
     public double? AvgHandoffHours { get; set; }
 
     public List<StatusCountItem> CountsByStatus { get; set; } = new();
+    public List<TypeCountItem> CountsByType { get; set; } = new();
     public List<CategoryCountItem> CountsByCategory { get; set; } = new();
     public List<StatusDurationItem> AvgHoursByStatus { get; set; } = new();
     public List<GroupTransitionItem> GroupTransitions { get; set; } = new();
@@ -20,7 +21,15 @@ public class MetricsViewModel
     public List<CountryOption> Countries { get; set; } = new();
     public List<CategoryOption> Categories { get; set; } = new();
     public int? SelectedCountryId { get; set; }
+    public CaseType? SelectedType { get; set; }
     public int? SelectedCategoryId { get; set; }
+}
+
+public class TypeCountItem
+{
+    public CaseType Type { get; set; }
+    public int Count { get; set; }
+    public double Percentage { get; set; }
 }
 
 public class StatusCountItem

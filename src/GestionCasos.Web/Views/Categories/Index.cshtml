@@ -3,6 +3,11 @@
     ViewData["Title"] = "Categorías";
 }
 <h1>Categorías</h1>
+<p class="gc-hint">
+    Categorías internas para clasificar los casos ya recibidos (ej. "Sin movimiento causa cliente",
+    "No se enviaron los insumos"). El cliente no las ve ni las elige: las asigna el perfil interno
+    desde el detalle de cada caso.
+</p>
 
 <div class="gc-card">
     <div class="gc-card-title">Agregar categoría</div>
@@ -10,7 +15,7 @@
         @Html.AntiForgeryToken()
         <div class="gc-form-group">
             <label class="gc-label">Nombre</label>
-            <input class="gc-input" name="Name" placeholder="Ej: Incidente de seguridad" required />
+            <input class="gc-input" name="Name" placeholder="Ej: Sin movimiento causa cliente" required />
         </div>
         <button type="submit" class="gc-btn">Agregar</button>
     </form>
@@ -18,23 +23,23 @@
 
 <div class="gc-card">
     <table class="gc-table">
-        <thead><tr><th>Nombre</th><th>Origen</th><th></th></tr></thead>
+        <thead><tr><th>Nombre</th><th></th></tr></thead>
         <tbody>
             @foreach (var category in Model)
             {
                 <tr>
                     <td>@category.Name</td>
-                    <td>@(category.IsSystemDefined ? "Sistema" : "Agregada por el equipo interno")</td>
                     <td>
-                        @if (!category.IsSystemDefined)
-                        {
-                            <form asp-controller="Categories" asp-action="Delete" asp-route-id="@category.Id" method="post" class="gc-inline-form">
-                                @Html.AntiForgeryToken()
-                                <button type="submit" class="gc-link-button">Eliminar</button>
-                            </form>
-                        }
+                        <form asp-controller="Categories" asp-action="Delete" asp-route-id="@category.Id" method="post" class="gc-inline-form">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="gc-link-button">Eliminar</button>
+                        </form>
                     </td>
                 </tr>
+            }
+            @if (Model.Count == 0)
+            {
+                <tr><td colspan="2" class="gc-hint">Todavía no hay categorías cargadas.</td></tr>
             }
         </tbody>
     </table>

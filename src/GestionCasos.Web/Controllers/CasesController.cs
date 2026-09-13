@@ -56,7 +56,7 @@ public class CasesController : GestionCasosControllerBase
             var vm = BuildCreateViewModel(user);
             vm.ClientId = model.ClientId;
             vm.BranchIds = model.BranchIds;
-            vm.CategoryId = model.CategoryId;
+            vm.Type = model.Type;
             vm.Description = model.Description;
             return View(vm);
         }
@@ -68,12 +68,12 @@ public class CasesController : GestionCasosControllerBase
             ModelState.AddModelError(nameof(model.BranchIds), "Seleccioná al menos una sucursal válida.");
             var vm = BuildCreateViewModel(user);
             vm.ClientId = model.ClientId;
-            vm.CategoryId = model.CategoryId;
+            vm.Type = model.Type;
             vm.Description = model.Description;
             return View(vm);
         }
 
-        var created = _caseService.CreateCases(user, model.ClientId.Value, branchIds, model.CategoryId!.Value, model.Description.Trim());
+        var created = _caseService.CreateCases(user, model.ClientId.Value, branchIds, model.Type!.Value, model.Description.Trim());
         TempData["Success"] = created.Count == 1
             ? $"Se registró el caso {created[0].Number}."
             : $"Se registraron {created.Count} casos (uno por sucursal): {string.Join(", ", created.Select(c => c.Number))}.";
@@ -105,8 +105,7 @@ public class CasesController : GestionCasosControllerBase
                 ClientId = c.Id,
                 ClientName = c.Name,
                 Branches = _catalogService.GetBranches(clientId: c.Id).Select(b => new BranchOption { Id = b.Id, Name = b.Name }).ToList()
-            }).ToList(),
-            AvailableCategories = _catalogService.GetCategories().Select(c => new CategoryOption { Id = c.Id, Name = c.Name }).ToList()
+            }).ToList()
         };
     }
 

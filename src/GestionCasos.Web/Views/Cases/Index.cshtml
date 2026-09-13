@@ -19,7 +19,7 @@
                     <th>Número</th>
                     <th>Cliente</th>
                     <th>Sucursal</th>
-                    <th>Categoría</th>
+                    <th>Tipo</th>
                     <th>Estado</th>
                     <th>Creado</th>
                     <th></th>
@@ -32,7 +32,7 @@
                         <td>@item.Number</td>
                         <td>@item.ClientName</td>
                         <td>@item.BranchName</td>
-                        <td>@item.CategoryName</td>
+                        <td>@item.Type.ToDisplayName()</td>
                         <td><span class="gc-status gc-status-@item.Status">@item.Status.ToDisplayName()</span></td>
                         <td>@item.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                         <td><a asp-controller="Cases" asp-action="Details" asp-route-id="@item.Id">Ver detalle</a></td>

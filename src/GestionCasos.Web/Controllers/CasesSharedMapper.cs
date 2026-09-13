@@ -11,7 +11,7 @@ public static class CasesSharedMapper
     {
         var client = catalog.GetClient(c.ClientId);
         var branch = catalog.GetBranch(c.BranchId);
-        var category = catalog.GetCategory(c.CategoryId);
+        var category = c.CategoryId.HasValue ? catalog.GetCategory(c.CategoryId.Value) : null;
         var group = c.AssignedGroupId.HasValue ? catalog.GetResolverGroup(c.AssignedGroupId.Value) : null;
 
         return new CaseListItemViewModel
@@ -20,7 +20,8 @@ public static class CasesSharedMapper
             Number = c.Number,
             ClientName = client?.Name ?? "(cliente eliminado)",
             BranchName = branch?.Name ?? "(sucursal eliminada)",
-            CategoryName = category?.Name ?? "(sin categoría)",
+            Type = c.Type,
+            CategoryName = category?.Name,
             Status = c.Status,
             ResolverGroupName = group?.Name,
             CreatedAtUtc = c.CreatedAtUtc,
@@ -32,7 +33,7 @@ public static class CasesSharedMapper
     {
         var client = catalog.GetClient(c.ClientId);
         var country = catalog.GetCountry(c.CountryId);
-        var category = catalog.GetCategory(c.CategoryId);
+        var category = c.CategoryId.HasValue ? catalog.GetCategory(c.CategoryId.Value) : null;
         var group = c.AssignedGroupId.HasValue ? catalog.GetResolverGroup(c.AssignedGroupId.Value) : null;
         var creator = catalog.GetUser(c.CreatedByUserId);
 
@@ -43,7 +44,9 @@ public static class CasesSharedMapper
             ClientName = client?.Name ?? "(cliente eliminado)",
             CountryName = country?.Name ?? string.Empty,
             BranchName = catalog.GetBranch(c.BranchId)?.Name ?? "(sucursal eliminada)",
-            CategoryName = category?.Name ?? "(sin categoría)",
+            Type = c.Type,
+            CategoryId = c.CategoryId,
+            CategoryName = category?.Name,
             Description = c.Description,
             Status = c.Status,
             CreatedByName = creator?.Name ?? "(usuario eliminado)",
@@ -53,6 +56,9 @@ public static class CasesSharedMapper
             AvailableGroups = canManage
                 ? catalog.GetResolverGroups(countryId: c.CountryId).Select(g => new ResolverGroupOption { Id = g.Id, Name = g.Name }).ToList()
                 : new List<ResolverGroupOption>(),
+            AvailableCategories = canManage
+                ? catalog.GetCategories().Select(cat => new CategoryOption { Id = cat.Id, Name = cat.Name }).ToList()
+                : new List<CategoryOption>(),
             StatusHistory = c.StatusHistory
                 .OrderBy(h => h.ChangedAtUtc)
                 .Select(h => new StatusHistoryRow

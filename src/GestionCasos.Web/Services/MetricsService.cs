@@ -13,12 +13,13 @@ public class MetricsService : IMetricsService
         _store = store;
     }
 
-    public MetricsViewModel BuildMetrics(int? countryId, int? categoryId)
+    public MetricsViewModel BuildMetrics(int? countryId, CaseType? type, int? categoryId)
     {
         lock (_store.Lock)
         {
             var cases = _store.Cases.AsEnumerable();
             if (countryId.HasValue) cases = cases.Where(c => c.CountryId == countryId.Value);
+            if (type.HasValue) cases = cases.Where(c => c.Type == type.Value);
             if (categoryId.HasValue) cases = cases.Where(c => c.CategoryId == categoryId.Value);
             var caseList = cases.ToList();
 
@@ -31,6 +32,7 @@ public class MetricsService : IMetricsService
                 Countries = _store.Countries.Select(c => new CountryOption { Id = c.Id, Name = c.Name }).OrderBy(c => c.Name).ToList(),
                 Categories = _store.Categories.Select(c => new CategoryOption { Id = c.Id, Name = c.Name }).OrderBy(c => c.Name).ToList(),
                 SelectedCountryId = countryId,
+                SelectedType = type,
                 SelectedCategoryId = categoryId
             };
 
@@ -57,12 +59,22 @@ public class MetricsService : IMetricsService
                 })
                 .ToList();
 
-            // Conteo y % por categoría.
+            // Conteo y % por tipo (Solicitud/Consulta/Reclamo).
+            vm.CountsByType = Enum.GetValues<CaseType>()
+                .Select(t => new TypeCountItem
+                {
+                    Type = t,
+                    Count = caseList.Count(c => c.Type == t),
+                    Percentage = Math.Round(caseList.Count(c => c.Type == t) * 100.0 / total, 1)
+                })
+                .ToList();
+
+            // Conteo y % por categoría interna (asignada por el perfil interno; puede no tener).
             vm.CountsByCategory = caseList
                 .GroupBy(c => c.CategoryId)
                 .Select(g => new CategoryCountItem
                 {
-                    CategoryName = _store.Categories.FirstOrDefault(cat => cat.Id == g.Key)?.Name ?? "(sin categoría)",
+                    CategoryName = g.Key.HasValue ? (_store.Categories.FirstOrDefault(cat => cat.Id == g.Key.Value)?.Name ?? "(categoría eliminada)") : "Sin categorizar",
                     Count = g.Count(),
                     Percentage = Math.Round(g.Count() * 100.0 / total, 1)
                 })

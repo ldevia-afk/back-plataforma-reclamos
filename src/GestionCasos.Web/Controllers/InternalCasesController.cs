@@ -18,11 +18,12 @@ public class InternalCasesController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index(int? filterCategoryId, CaseStatus? filterStatus, int? filterGroupId, bool groupByCategory = true)
+    public IActionResult Index(CaseType? filterType, int? filterCategoryId, CaseStatus? filterStatus, int? filterGroupId, bool groupByType = true)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
+        var type = filterType;
         var categoryId = filterCategoryId;
         var status = filterStatus;
         var groupId = filterGroupId;
@@ -30,6 +31,7 @@ public class InternalCasesController : GestionCasosControllerBase
         var user = CurrentUser!;
         var cases = _caseService.GetCasesForInternalUser(user).AsEnumerable();
 
+        if (type.HasValue) cases = cases.Where(c => c.Type == type.Value);
         if (categoryId.HasValue) cases = cases.Where(c => c.CategoryId == categoryId.Value);
         if (status.HasValue) cases = cases.Where(c => c.Status == status.Value);
         if (groupId.HasValue) cases = cases.Where(c => c.AssignedGroupId == groupId.Value);
@@ -39,15 +41,16 @@ public class InternalCasesController : GestionCasosControllerBase
         var vm = new InternalInboxViewModel
         {
             AllCases = items,
-            GroupedByCategory = groupByCategory
-                ? items.GroupBy(i => i.CategoryName).OrderBy(g => g.Key).ToList()
+            GroupedByType = groupByType
+                ? items.GroupBy(i => i.Type.ToDisplayName()).OrderBy(g => g.Key).ToList()
                 : new List<IGrouping<string, CaseListItemViewModel>>(),
             Categories = _catalogService.GetCategories().Select(c => new CategoryOption { Id = c.Id, Name = c.Name }).ToList(),
             ResolverGroups = _catalogService.GetResolverGroups(countryId: user.CountryId).Select(g => new ResolverGroupOption { Id = g.Id, Name = g.Name }).ToList(),
+            FilterType = type,
             FilterCategoryId = categoryId,
             FilterStatus = status,
             FilterGroupId = groupId,
-            GroupByCategory = groupByCategory
+            GroupByType = groupByType
         };
 
         return View(vm);
@@ -81,6 +84,18 @@ public class InternalCasesController : GestionCasosControllerBase
 
         _caseService.AssignGroup(id, resolverGroupId, CurrentUser!.Id, comment);
         TempData["Success"] = "Se actualizó el grupo resolutor del caso.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult AssignCategory(int id, int? categoryId)
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        _caseService.AssignCategory(id, categoryId);
+        TempData["Success"] = "Se actualizó la categoría del caso.";
         return RedirectToAction(nameof(Details), new { id });
     }
 

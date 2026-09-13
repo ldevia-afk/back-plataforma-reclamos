@@ -12,6 +12,12 @@
         </select>
     </div>
     <div class="gc-form-group">
+        <label class="gc-label">Tipo</label>
+        <select asp-for="SelectedType" class="gc-select" asp-items="Html.GetEnumSelectList<CaseType>()" onchange="this.form.submit()">
+            <option value="">Todos</option>
+        </select>
+    </div>
+    <div class="gc-form-group">
         <label class="gc-label">Categoría</label>
         <select asp-for="SelectedCategoryId" class="gc-select" asp-items="Model.Categories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
             <option value="">Todas</option>
@@ -55,7 +61,20 @@
 </div>
 
 <div class="gc-card">
+    <div class="gc-card-title">Casos por tipo</div>
+    @foreach (var item in Model.CountsByType)
+    {
+        <div class="gc-bar-row">
+            <div class="gc-bar-label">@item.Type.ToDisplayName()</div>
+            <div class="gc-bar-track"><div class="gc-bar-fill" style="width:@(item.Percentage)%"></div></div>
+            <div class="gc-bar-value">@item.Count (@item.Percentage%)</div>
+        </div>
+    }
+</div>
+
+<div class="gc-card">
     <div class="gc-card-title">Casos por categoría</div>
+    <p class="gc-hint">Categoría interna asignada por el equipo (para casos que todavía no fueron categorizados aparecen como "Sin categorizar").</p>
     @if (Model.CountsByCategory.Count == 0)
     {
         <p class="gc-hint">No hay datos todavía.</p>

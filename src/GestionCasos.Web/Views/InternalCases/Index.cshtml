@@ -6,6 +6,12 @@
 
 <form method="get" class="gc-filters gc-card">
     <div class="gc-form-group">
+        <label class="gc-label">Tipo</label>
+        <select asp-for="FilterType" class="gc-select" asp-items="Html.GetEnumSelectList<CaseType>()" onchange="this.form.submit()">
+            <option value="">Todos</option>
+        </select>
+    </div>
+    <div class="gc-form-group">
         <label class="gc-label">Categoría</label>
         <select asp-for="FilterCategoryId" class="gc-select" asp-items="Model.Categories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
             <option value="">Todas</option>
@@ -25,9 +31,9 @@
     </div>
     <div class="gc-form-group">
         <label class="gc-label">Vista</label>
-        <select name="groupByCategory" class="gc-select" onchange="this.form.submit()">
-            <option value="true" selected="@(Model.GroupByCategory ? "selected" : null)">Agrupada por categoría</option>
-            <option value="false" selected="@(!Model.GroupByCategory ? "selected" : null)">Lista simple</option>
+        <select name="groupByType" class="gc-select" onchange="this.form.submit()">
+            <option value="true" selected="@(Model.GroupByType ? "selected" : null)">Agrupada por tipo</option>
+            <option value="false" selected="@(!Model.GroupByType ? "selected" : null)">Lista simple</option>
         </select>
     </div>
     <noscript><button type="submit" class="gc-btn">Filtrar</button></noscript>
@@ -37,9 +43,9 @@
 {
     <div class="gc-card"><p class="gc-hint">No hay casos que coincidan con el filtro.</p></div>
 }
-else if (Model.GroupByCategory)
+else if (Model.GroupByType)
 {
-    foreach (var group in Model.GroupedByCategory)
+    foreach (var group in Model.GroupedByType)
     {
         <div class="gc-category-block">
             <div class="gc-category-heading">@group.Key (@group.Count())</div>

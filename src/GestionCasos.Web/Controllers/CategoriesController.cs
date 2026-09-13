@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GestionCasos.Web.Controllers;
 
-/// <summary>ABM de categorías (Solicitud/Consulta/Reclamo son de sistema; el perfil interno agrega más).</summary>
+/// <summary>ABM de categorías internas para clasificar casos ya recibidos (sólo perfil Interno).</summary>
 public class CategoriesController : GestionCasosControllerBase
 {
     private readonly ICatalogService _catalogService;
@@ -47,13 +47,6 @@ public class CategoriesController : GestionCasosControllerBase
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
-
-        var category = _catalogService.GetCategory(id);
-        if (category != null && category.IsSystemDefined)
-        {
-            TempData["Error"] = "Las categorías de sistema no se pueden eliminar.";
-            return RedirectToAction(nameof(Index));
-        }
 
         _catalogService.DeleteCategory(id);
         TempData["Success"] = "Categoría eliminada.";

@@ -49,11 +49,11 @@ public class InMemoryDataStore
         Countries.Add(new Country { Id = chileId, Name = "Chile", Code = "CL" });
         Countries.Add(new Country { Id = argentinaId, Name = "Argentina", Code = "AR" });
 
-        // --- Categorías de sistema ---
-        var catSolicitud = new Category { Id = _nextCategoryId++, Name = "Solicitud", IsSystemDefined = true };
-        var catConsulta = new Category { Id = _nextCategoryId++, Name = "Consulta", IsSystemDefined = true };
-        var catReclamo = new Category { Id = _nextCategoryId++, Name = "Reclamo", IsSystemDefined = true };
-        Categories.AddRange(new[] { catSolicitud, catConsulta, catReclamo });
+        // --- Categorías internas (las asigna el perfil interno luego de recibir el caso) ---
+        var catSinMovimientoCliente = new Category { Id = _nextCategoryId++, Name = "Sin movimiento causa cliente" };
+        var catInsumosNoEnviados = new Category { Id = _nextCategoryId++, Name = "No se enviaron los insumos" };
+        var catFallaTecnica = new Category { Id = _nextCategoryId++, Name = "Falla técnica del equipo" };
+        Categories.AddRange(new[] { catSinMovimientoCliente, catInsumosNoEnviados, catFallaTecnica });
 
         // --- Clientes ---
         var lider = new Client { Id = _nextClientId++, Name = "Supermercados Líder", CountryId = chileId };
@@ -154,7 +154,7 @@ public class InMemoryDataStore
         // --- Casos de ejemplo (para poder ver la bandeja y las métricas con datos) ---
         var now = DateTime.UtcNow;
 
-        AddSeedCase(chileId, "CL", lider.Id, brLiderProvidencia.Id, catReclamo.Id,
+        AddSeedCase(chileId, "CL", lider.Id, brLiderProvidencia.Id, CaseType.Reclamo,
             "El lector de tarjetas de la caja 3 no funciona desde ayer.", clienteCl1.Id,
             now.AddDays(-6),
             new (CaseStatus, TimeSpan, int?)[]
@@ -164,12 +164,13 @@ public class InMemoryDataStore
                 (CaseStatus.EnAnalisis, TimeSpan.FromHours(10), internoCl2.Id),
                 (CaseStatus.Resuelto, TimeSpan.FromHours(30), internoCl2.Id)
             },
-            new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (mesaAyudaCl.Id, TimeSpan.FromHours(2)), (logisticaCl.Id, TimeSpan.FromHours(10)) });
+            new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (mesaAyudaCl.Id, TimeSpan.FromHours(2)), (logisticaCl.Id, TimeSpan.FromHours(10)) },
+            categoryId: catFallaTecnica.Id);
 
         // Solicitud de cartelería para dos sucursales a la vez: un caso por sucursal.
         foreach (var branchId in new[] { brBancoChileCentro.Id, brBancoChileNunoa.Id })
         {
-            AddSeedCase(chileId, "CL", bancoChile.Id, branchId, catSolicitud.Id,
+            AddSeedCase(chileId, "CL", bancoChile.Id, branchId, CaseType.Solicitud,
                 "Solicitamos instalación de cartelería nueva.", clienteCl2.Id,
                 now.AddDays(-3),
                 new (CaseStatus, TimeSpan, int?)[]
@@ -180,7 +181,7 @@ public class InMemoryDataStore
                 new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (mesaAyudaCl.Id, TimeSpan.FromHours(5)) });
         }
 
-        AddSeedCase(chileId, "CL", lider.Id, brLiderMaipu.Id, catConsulta.Id,
+        AddSeedCase(chileId, "CL", lider.Id, brLiderMaipu.Id, CaseType.Consulta,
             "Consulta sobre el próximo servicio de recolección de valores.", clienteCl1.Id,
             now.AddHours(-20),
             new (CaseStatus, TimeSpan, int?)[] { (CaseStatus.Inicial, TimeSpan.Zero, null) },
@@ -189,7 +190,7 @@ public class InMemoryDataStore
         // Reclamo por demora en recaudación en dos sucursales a la vez: un caso por sucursal.
         foreach (var branchId in new[] { brFarmacityPalermo.Id, brFarmacityRecoleta.Id })
         {
-            AddSeedCase(argentinaId, "AR", farmacity.Id, branchId, catReclamo.Id,
+            AddSeedCase(argentinaId, "AR", farmacity.Id, branchId, CaseType.Reclamo,
                 "Demora reiterada del servicio de recaudación.", clienteAr1.Id,
                 now.AddDays(-5),
                 new (CaseStatus, TimeSpan, int?)[]
@@ -199,10 +200,11 @@ public class InMemoryDataStore
                     (CaseStatus.EnAnalisis, TimeSpan.FromHours(20), internoAr2.Id),
                     (CaseStatus.Resuelto, TimeSpan.FromHours(50), internoAr2.Id)
                 },
-                new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (mesaAyudaAr.Id, TimeSpan.FromHours(3)), (seguridadAr.Id, TimeSpan.FromHours(20)) });
+                new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (mesaAyudaAr.Id, TimeSpan.FromHours(3)), (seguridadAr.Id, TimeSpan.FromHours(20)) },
+                categoryId: catSinMovimientoCliente.Id);
         }
 
-        AddSeedCase(argentinaId, "AR", bancoGalicia.Id, brGaliciaMicrocentro.Id, catSolicitud.Id,
+        AddSeedCase(argentinaId, "AR", bancoGalicia.Id, brGaliciaMicrocentro.Id, CaseType.Solicitud,
             "Solicitud de refuerzo de seguridad para evento especial.", clienteAr2.Id,
             now.AddDays(-1),
             new (CaseStatus, TimeSpan, int?)[]
@@ -210,9 +212,10 @@ public class InMemoryDataStore
                 (CaseStatus.Inicial, TimeSpan.Zero, null),
                 (CaseStatus.Asignado, TimeSpan.FromHours(1), internoAr1.Id)
             },
-            new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (seguridadAr.Id, TimeSpan.FromHours(1)) });
+            new (int?, TimeSpan)[] { (null, TimeSpan.Zero), (seguridadAr.Id, TimeSpan.FromHours(1)) },
+            categoryId: catInsumosNoEnviados.Id);
 
-        AddSeedCase(argentinaId, "AR", farmacity.Id, brFarmacityRecoleta.Id, catConsulta.Id,
+        AddSeedCase(argentinaId, "AR", farmacity.Id, brFarmacityRecoleta.Id, CaseType.Consulta,
             "Consulta por cambio de horario de atención.", clienteAr1.Id,
             now.AddHours(-8),
             new (CaseStatus, TimeSpan, int?)[] { (CaseStatus.Inicial, TimeSpan.Zero, null) },
@@ -220,10 +223,11 @@ public class InMemoryDataStore
     }
 
     private void AddSeedCase(
-        int countryId, string countryCode, int clientId, int branchId, int categoryId,
+        int countryId, string countryCode, int clientId, int branchId, CaseType caseType,
         string description, int createdByUserId, DateTime createdAtUtc,
         (CaseStatus Status, TimeSpan Offset, int? ByUserId)[] statusSteps,
-        (int? GroupId, TimeSpan Offset)[] groupSteps)
+        (int? GroupId, TimeSpan Offset)[] groupSteps,
+        int? categoryId = null)
     {
         var id = _nextCaseId++;
         var serviceCase = new ServiceCase
@@ -232,6 +236,7 @@ public class InMemoryDataStore
             Number = $"{countryCode}-{id:D6}",
             ClientId = clientId,
             BranchId = branchId,
+            Type = caseType,
             CategoryId = categoryId,
             Description = description,
             CountryId = countryId,

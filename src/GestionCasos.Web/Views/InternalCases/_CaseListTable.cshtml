@@ -5,6 +5,7 @@
             <th>Número</th>
             <th>Cliente</th>
             <th>Sucursal</th>
+            <th>Tipo</th>
             <th>Categoría</th>
             <th>Estado</th>
             <th>Grupo</th>
@@ -19,7 +20,8 @@
                 <td>@item.Number</td>
                 <td>@item.ClientName</td>
                 <td>@item.BranchName</td>
-                <td>@item.CategoryName</td>
+                <td>@item.Type.ToDisplayName()</td>
+                <td>@(item.CategoryName ?? "Sin categorizar")</td>
                 <td><span class="gc-status gc-status-@item.Status">@item.Status.ToDisplayName()</span></td>
                 <td>@(item.ResolverGroupName ?? "Sin asignar")</td>
                 <td>@item.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>

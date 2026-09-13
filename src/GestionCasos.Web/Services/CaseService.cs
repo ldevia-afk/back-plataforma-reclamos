@@ -12,7 +12,7 @@ public class CaseService : ICaseService
         _store = store;
     }
 
-    public List<ServiceCase> CreateCases(AppUser createdBy, int clientId, List<int> branchIds, int categoryId, string description)
+    public List<ServiceCase> CreateCases(AppUser createdBy, int clientId, List<int> branchIds, CaseType caseType, string description)
     {
         lock (_store.Lock)
         {
@@ -31,7 +31,8 @@ public class CaseService : ICaseService
                     Number = $"{countryCode}-{id:D6}",
                     ClientId = clientId,
                     BranchId = branchId,
-                    CategoryId = categoryId,
+                    Type = caseType,
+                    CategoryId = null,
                     Description = description,
                     CountryId = client.CountryId,
                     Status = CaseStatus.Inicial,
@@ -121,6 +122,17 @@ public class CaseService : ICaseService
                     ChangedByUserId = changedByUserId
                 });
             }
+        }
+    }
+
+    public void AssignCategory(int caseId, int? categoryId)
+    {
+        lock (_store.Lock)
+        {
+            var serviceCase = _store.Cases.FirstOrDefault(c => c.Id == caseId);
+            if (serviceCase == null) return;
+
+            serviceCase.CategoryId = categoryId;
         }
     }
 }

@@ -1,12 +1,12 @@
 namespace GestionCasos.Web.Models;
 
 /// <summary>
-/// Categoría de un caso (Solicitud, Consulta, Reclamo, y las que el perfil interno
-/// vaya dando de alta). Las categorías de sistema (seed) no se pueden eliminar.
+/// Categoría interna para clasificar un caso ya recibido (ej. "Sin movimiento
+/// causa cliente", "No se enviaron los insumos"). La da de alta y la asigna
+/// únicamente el perfil interno; no la elige el cliente al crear el caso.
 /// </summary>
 public class Category
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public bool IsSystemDefined { get; set; }
 }

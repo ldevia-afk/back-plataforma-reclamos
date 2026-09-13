@@ -19,7 +19,7 @@
 
         <div class="gc-form-group">
             <label class="gc-label">Sucursales / puntos (podés elegir varias)</label>
-            <p class="gc-hint">Si elegís más de una, se genera un caso independiente por cada sucursal (mismo detalle y categoría).</p>
+            <p class="gc-hint">Si elegís más de una, se genera un caso independiente por cada sucursal (mismo detalle y tipo).</p>
             @foreach (var client in Model.AvailableClients)
             {
                 <div data-branch-group="@client.ClientId" hidden style="margin-bottom:8px;">
@@ -46,11 +46,11 @@
         </div>
 
         <div class="gc-form-group">
-            <label class="gc-label" for="category-select">Categoría</label>
-            <select id="category-select" name="CategoryId" class="gc-select" asp-items="Model.AvailableCategories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
-                <option value="">-- Seleccioná una categoría --</option>
+            <label class="gc-label" for="type-select">Tipo</label>
+            <select id="type-select" name="Type" class="gc-select" asp-items="Html.GetEnumSelectList<CaseType>()">
+                <option value="">-- Seleccioná el tipo de caso --</option>
             </select>
-            <span asp-validation-for="CategoryId" class="field-validation-error"></span>
+            <span asp-validation-for="Type" class="field-validation-error"></span>
         </div>
 
         <div class="gc-form-group">

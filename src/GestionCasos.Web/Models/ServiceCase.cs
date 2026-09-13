@@ -13,7 +13,13 @@ public class ServiceCase
 
     public int ClientId { get; set; }
     public int BranchId { get; set; }
-    public int CategoryId { get; set; }
+
+    /// <summary>Tipo elegido por el cliente al registrar el caso.</summary>
+    public CaseType Type { get; set; }
+
+    /// <summary>Categoría interna asignada por el perfil interno (null hasta que la categoricen).</summary>
+    public int? CategoryId { get; set; }
+
     public string Description { get; set; } = string.Empty;
 
     public int CountryId { get; set; }
