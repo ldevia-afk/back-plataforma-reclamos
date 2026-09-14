@@ -288,30 +288,40 @@ public class InMemoryDataStore
             ResolutionConfirmed = resolutionConfirmed
         };
 
-        foreach (var step in statusSteps)
+        for (var i = 0; i < statusSteps.Length; i++)
         {
-            serviceCase.StatusHistory.Add(new CaseStatusHistoryEntry
+            var step = statusSteps[i];
+            serviceCase.History.Add(new CaseHistoryEntry
             {
+                EventType = i == 0 ? CaseEventType.Created : CaseEventType.StatusChanged,
                 Status = step.Status,
-                ChangedAtUtc = createdAtUtc.Add(step.Offset),
-                ChangedByUserId = step.ByUserId
+                OccurredAtUtc = createdAtUtc.Add(step.Offset),
+                ChangedByUserId = i == 0 ? createdByUserId : step.ByUserId
             });
         }
 
-        foreach (var step in groupSteps)
+        foreach (var step in groupSteps.Where(s => s.GroupId.HasValue))
         {
-            serviceCase.GroupHistory.Add(new CaseGroupHistoryEntry
+            serviceCase.History.Add(new CaseHistoryEntry
             {
+                EventType = CaseEventType.GroupAssigned,
                 ResolverGroupId = step.GroupId,
-                ChangedAtUtc = createdAtUtc.Add(step.Offset)
+                OccurredAtUtc = createdAtUtc.Add(step.Offset)
             });
         }
 
         if (resolutionConfirmed)
         {
-            var confirmedAt = serviceCase.StatusHistory.Last().ChangedAtUtc.AddHours(1);
+            var confirmedAt = serviceCase.History.Last(h => h.EventType == CaseEventType.StatusChanged || h.EventType == CaseEventType.Created).OccurredAtUtc.AddHours(1);
             serviceCase.ResolutionConfirmedAtUtc = confirmedAt;
             serviceCase.ResolutionConfirmedByUserId = resolutionConfirmedByUserId;
+            serviceCase.History.Add(new CaseHistoryEntry
+            {
+                EventType = CaseEventType.ResolutionConfirmed,
+                OccurredAtUtc = confirmedAt,
+                ChangedByUserId = resolutionConfirmedByUserId,
+                Comment = resolutionComment
+            });
         }
 
         Cases.Add(serviceCase);
@@ -321,7 +331,7 @@ public class InMemoryDataStore
     private static string BuildResolutionEmailBody(ServiceCase serviceCase, string branchName, string resolutionComment)
     {
         var startDate = serviceCase.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
-        var endDate = serviceCase.StatusHistory.Last(h => h.Status == CaseStatus.Resuelto).ChangedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+        var endDate = serviceCase.History.Last(h => h.Status == CaseStatus.Resuelto).OccurredAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
         return
             $"Caso: {serviceCase.Number}\n" +
             $"Sucursal: {branchName}\n" +

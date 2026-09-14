@@ -48,6 +48,10 @@ public class CaseListItemViewModel
     public string? ResolverGroupName { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public string Description { get; set; } = string.Empty;
+    public bool ResolutionConfirmed { get; set; }
+    public string? ResolutionComment { get; set; }
+    /// <summary>Resuelto pero todavía sin confirmar/enviar al cliente por Mesa de Ayuda (SAC).</summary>
+    public bool PendingSacConfirmation => Status == CaseStatus.Resuelto && !ResolutionConfirmed && !string.IsNullOrWhiteSpace(ResolutionComment);
 }
 
 public class CaseDetailViewModel
@@ -64,14 +68,16 @@ public class CaseDetailViewModel
     public CaseStatus Status { get; set; }
     public string CreatedByName { get; set; } = string.Empty;
     public DateTime CreatedAtUtc { get; set; }
+    public int? ResolverGroupId { get; set; }
     public string? ResolverGroupName { get; set; }
+    public int? AssignedUserId { get; set; }
+    public string? AssignedUserName { get; set; }
 
     public bool CanManage { get; set; }
     public List<ResolverGroupOption> AvailableGroups { get; set; } = new();
     public List<CategoryOption> AvailableCategories { get; set; } = new();
 
-    public List<StatusHistoryRow> StatusHistory { get; set; } = new();
-    public List<GroupHistoryRow> GroupHistory { get; set; } = new();
+    public List<CaseHistoryRow> History { get; set; } = new();
 
     // --- Resolución y confirmación con el cliente ---
     public DateTime? ResolvedAtUtc { get; set; }
@@ -82,27 +88,45 @@ public class CaseDetailViewModel
     public bool AssignedToHelpDesk { get; set; }
     /// <summary>El cliente ya puede ver el comentario de resolución.</summary>
     public bool ShowResolutionToClient => Status == CaseStatus.Resuelto && ResolutionConfirmed;
+    /// <summary>Resuelto pero todavía sin confirmar/enviar al cliente por Mesa de Ayuda (SAC).</summary>
+    public bool PendingSacConfirmation => Status == CaseStatus.Resuelto && !ResolutionConfirmed && !string.IsNullOrWhiteSpace(ResolutionComment);
 }
 
 public class ResolverGroupOption
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    public List<UserOption> Members { get; set; } = new();
 }
 
-public class StatusHistoryRow
+public class UserOption
 {
-    public CaseStatus Status { get; set; }
-    public DateTime ChangedAtUtc { get; set; }
-    public string? ChangedByName { get; set; }
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
 }
 
-public class GroupHistoryRow
+public class CaseHistoryRow
 {
-    public string GroupName { get; set; } = string.Empty;
-    public DateTime ChangedAtUtc { get; set; }
+    public CaseEventType EventType { get; set; }
+    public DateTime OccurredAtUtc { get; set; }
     public string? ChangedByName { get; set; }
+    /// <summary>Grupo(s) resolutor(es) al que pertenece el usuario que generó el evento, si aplica.</summary>
+    public string? ChangedByGroupNames { get; set; }
+    public CaseStatus? Status { get; set; }
+    public string? GroupName { get; set; }
+    public string? AssignedUserName { get; set; }
+    public string? CategoryName { get; set; }
     public string? Comment { get; set; }
+
+    public string Title => EventType switch
+    {
+        CaseEventType.Created => "Caso creado",
+        CaseEventType.StatusChanged => $"Estado cambiado a {Status?.ToDisplayName()}",
+        CaseEventType.GroupAssigned => GroupName == null ? "Se quitó el grupo resolutor" : $"Derivado a {GroupName}" + (AssignedUserName != null ? $" (asignado a {AssignedUserName})" : ""),
+        CaseEventType.CategoryAssigned => CategoryName == null ? "Se quitó la categoría" : $"Categorizado como \"{CategoryName}\"",
+        CaseEventType.ResolutionConfirmed => "Confirmación enviada al cliente",
+        _ => EventType.ToString()
+    };
 }
 
 public class InternalInboxViewModel

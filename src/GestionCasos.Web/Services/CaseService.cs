@@ -41,8 +41,13 @@ public class CaseService : ICaseService
                     CreatedByUserId = createdBy.Id,
                     CreatedAtUtc = now
                 };
-                serviceCase.StatusHistory.Add(new CaseStatusHistoryEntry { Status = CaseStatus.Inicial, ChangedAtUtc = now, ChangedByUserId = createdBy.Id });
-                serviceCase.GroupHistory.Add(new CaseGroupHistoryEntry { ResolverGroupId = null, ChangedAtUtc = now, ChangedByUserId = createdBy.Id });
+                serviceCase.History.Add(new CaseHistoryEntry
+                {
+                    EventType = CaseEventType.Created,
+                    Status = CaseStatus.Inicial,
+                    OccurredAtUtc = now,
+                    ChangedByUserId = createdBy.Id
+                });
 
                 _store.Cases.Add(serviceCase);
                 created.Add(serviceCase);
@@ -88,17 +93,21 @@ public class CaseService : ICaseService
             var serviceCase = _store.Cases.FirstOrDefault(c => c.Id == caseId);
             if (serviceCase == null) return;
 
+            var comment = string.IsNullOrWhiteSpace(resolutionComment) ? null : resolutionComment.Trim();
+
             serviceCase.Status = newStatus;
-            serviceCase.StatusHistory.Add(new CaseStatusHistoryEntry
+            serviceCase.History.Add(new CaseHistoryEntry
             {
+                EventType = CaseEventType.StatusChanged,
                 Status = newStatus,
-                ChangedAtUtc = DateTime.UtcNow,
-                ChangedByUserId = changedByUserId
+                OccurredAtUtc = DateTime.UtcNow,
+                ChangedByUserId = changedByUserId,
+                Comment = comment
             });
 
             if (newStatus == CaseStatus.Resuelto)
             {
-                serviceCase.ResolutionComment = string.IsNullOrWhiteSpace(resolutionComment) ? null : resolutionComment.Trim();
+                serviceCase.ResolutionComment = comment;
                 serviceCase.ResolutionConfirmed = false;
                 serviceCase.ResolutionConfirmedAtUtc = null;
                 serviceCase.ResolutionConfirmedByUserId = null;
@@ -107,11 +116,13 @@ public class CaseService : ICaseService
                 if (helpDeskGroup != null && serviceCase.AssignedGroupId != helpDeskGroup.Id)
                 {
                     serviceCase.AssignedGroupId = helpDeskGroup.Id;
-                    serviceCase.GroupHistory.Add(new CaseGroupHistoryEntry
+                    serviceCase.AssignedUserId = null;
+                    serviceCase.History.Add(new CaseHistoryEntry
                     {
+                        EventType = CaseEventType.GroupAssigned,
                         ResolverGroupId = helpDeskGroup.Id,
-                        ChangedAtUtc = DateTime.UtcNow,
-                        ChangedByUserId = changedByUserId,
+                        OccurredAtUtc = DateTime.UtcNow,
+                        ChangedByUserId = null,
                         Comment = "Derivado automáticamente a Mesa de Ayuda para confirmar la resolución con el cliente."
                     });
                 }
@@ -119,7 +130,7 @@ public class CaseService : ICaseService
         }
     }
 
-    public void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId, string? comment)
+    public void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId, string? comment, int? assignedUserId = null)
     {
         lock (_store.Lock)
         {
@@ -127,10 +138,14 @@ public class CaseService : ICaseService
             if (serviceCase == null) return;
 
             serviceCase.AssignedGroupId = resolverGroupId;
-            serviceCase.GroupHistory.Add(new CaseGroupHistoryEntry
+            serviceCase.AssignedUserId = resolverGroupId.HasValue ? assignedUserId : null;
+
+            serviceCase.History.Add(new CaseHistoryEntry
             {
+                EventType = CaseEventType.GroupAssigned,
                 ResolverGroupId = resolverGroupId,
-                ChangedAtUtc = DateTime.UtcNow,
+                AssignedUserId = serviceCase.AssignedUserId,
+                OccurredAtUtc = DateTime.UtcNow,
                 ChangedByUserId = changedByUserId,
                 Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim()
             });
@@ -138,17 +153,18 @@ public class CaseService : ICaseService
             if (serviceCase.Status == CaseStatus.Inicial && resolverGroupId.HasValue)
             {
                 serviceCase.Status = CaseStatus.Asignado;
-                serviceCase.StatusHistory.Add(new CaseStatusHistoryEntry
+                serviceCase.History.Add(new CaseHistoryEntry
                 {
+                    EventType = CaseEventType.StatusChanged,
                     Status = CaseStatus.Asignado,
-                    ChangedAtUtc = DateTime.UtcNow,
+                    OccurredAtUtc = DateTime.UtcNow,
                     ChangedByUserId = changedByUserId
                 });
             }
         }
     }
 
-    public void AssignCategory(int caseId, int? categoryId)
+    public void AssignCategory(int caseId, int? categoryId, int changedByUserId)
     {
         lock (_store.Lock)
         {
@@ -156,6 +172,55 @@ public class CaseService : ICaseService
             if (serviceCase == null) return;
 
             serviceCase.CategoryId = categoryId;
+            serviceCase.History.Add(new CaseHistoryEntry
+            {
+                EventType = CaseEventType.CategoryAssigned,
+                CategoryId = categoryId,
+                OccurredAtUtc = DateTime.UtcNow,
+                ChangedByUserId = changedByUserId
+            });
+        }
+    }
+
+    public string? ManageCase(int caseId, int changedByUserId, int? resolverGroupId, int? assignedUserId, int? categoryId, CaseStatus newStatus, string? comment)
+    {
+        lock (_store.Lock)
+        {
+            var serviceCase = _store.Cases.FirstOrDefault(c => c.Id == caseId);
+            if (serviceCase == null) return "Caso no encontrado.";
+
+            var trimmedComment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+            var groupChanged = resolverGroupId != serviceCase.AssignedGroupId || assignedUserId != serviceCase.AssignedUserId;
+            var categoryChanged = categoryId != serviceCase.CategoryId;
+            var statusChanged = newStatus != serviceCase.Status;
+
+            if (statusChanged && newStatus == CaseStatus.Resuelto && trimmedComment == null)
+            {
+                return "Para marcar el caso como Resuelto tenés que agregar un comentario con el detalle de la resolución.";
+            }
+
+            if (!groupChanged && !categoryChanged && !statusChanged)
+            {
+                return null;
+            }
+
+            // El comentario de observaciones se adjunta al evento principal de la
+            // gestión (prioridad: cambio de estado > derivación de grupo > categoría),
+            // para no repetirlo en varias entradas del historial a la vez.
+            if (groupChanged)
+            {
+                AssignGroup(caseId, resolverGroupId, changedByUserId, statusChanged ? null : trimmedComment, assignedUserId);
+            }
+            if (categoryChanged)
+            {
+                AssignCategory(caseId, categoryId, changedByUserId);
+            }
+            if (statusChanged)
+            {
+                ChangeStatus(caseId, newStatus, changedByUserId, trimmedComment);
+            }
+
+            return null;
         }
     }
 
@@ -171,6 +236,14 @@ public class CaseService : ICaseService
             serviceCase.ResolutionConfirmed = true;
             serviceCase.ResolutionConfirmedAtUtc = DateTime.UtcNow;
             serviceCase.ResolutionConfirmedByUserId = confirmedByUserId;
+
+            serviceCase.History.Add(new CaseHistoryEntry
+            {
+                EventType = CaseEventType.ResolutionConfirmed,
+                OccurredAtUtc = serviceCase.ResolutionConfirmedAtUtc.Value,
+                ChangedByUserId = confirmedByUserId,
+                Comment = serviceCase.ResolutionComment
+            });
         }
 
         _emailService.SendCaseResolutionEmail(serviceCase, serviceCase.ResolutionComment);

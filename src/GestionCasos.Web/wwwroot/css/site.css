@@ -264,6 +264,22 @@ h2 { font-size: 18px; }
 .gc-status-Resuelto { background: var(--gc-success-bg); color: var(--gc-success-text); }
 .gc-status-Cerrado { background: #eaeaf2; color: #45455c; }
 
+.gc-badge-sac {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #fdeee0;
+    color: #a34d0a;
+    border: 1px solid #f3c99a;
+}
+button.gc-badge-sac {
+    cursor: pointer;
+    margin-left: 0;
+}
+
 /* --- Flujo de estados (chevrones) --- */
 .gc-status-flow {
     display: flex;

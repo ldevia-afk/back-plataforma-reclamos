@@ -21,7 +21,7 @@ public class EmailService : IEmailService
         var toEmail = creator?.Email ?? string.Empty;
 
         var startDate = serviceCase.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
-        var endDate = (serviceCase.StatusHistory.LastOrDefault(h => h.Status == CaseStatus.Resuelto)?.ChangedAtUtc ?? DateTime.UtcNow)
+        var endDate = (serviceCase.History.LastOrDefault(h => h.Status == CaseStatus.Resuelto)?.OccurredAtUtc ?? DateTime.UtcNow)
             .ToLocalTime().ToString("dd/MM/yyyy HH:mm");
 
         var body =

@@ -73,7 +73,8 @@
                 }
             </select>
             <button type="button" id="bulk-update-btn" class="gc-btn gc-btn-secondary">Actualizar seleccionados</button>
-            <span class="gc-hint">Marcá los casos en la tabla y elegí a qué estado pasarlos.</span>
+            <button type="button" id="bulk-sac-btn" class="gc-btn gc-btn-secondary">Enviar confirmación SAC a clientes</button>
+            <span class="gc-hint">Marcá los casos en la tabla y elegí a qué estado pasarlos, o enviá la confirmación SAC de los que ya estén Resueltos.</span>
         </div>
 
         if (Model.GroupByType)
@@ -115,6 +116,23 @@
         <div class="gc-modal-actions">
             <button type="button" id="bulk-cancel-btn" class="gc-btn gc-btn-secondary">Cancelar</button>
             <button type="button" id="bulk-confirm-btn" class="gc-btn">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<div id="bulk-sac-modal" class="gc-modal-overlay" hidden>
+    <div class="gc-modal">
+        <div class="gc-modal-header">
+            <div class="gc-modal-title">Confirmar envío al cliente</div>
+            <button type="button" id="bulk-sac-close-btn" class="gc-modal-close" aria-label="Cerrar">&times;</button>
+        </div>
+        <p>
+            Vas a enviar la confirmación de resolución al cliente de <strong id="bulk-sac-count">0</strong> caso(s),
+            usando el comentario de resolución ya cargado en cada uno.
+        </p>
+        <div class="gc-modal-actions">
+            <button type="button" id="bulk-sac-cancel-btn" class="gc-btn gc-btn-secondary">Cancelar</button>
+            <button type="button" id="bulk-sac-confirm-btn" class="gc-btn">Confirmar</button>
         </div>
     </div>
 </div>
@@ -189,5 +207,33 @@
 
             form.submit();
         });
+
+        // --- Envío masivo de confirmación SAC: reusa el mismo form/checkboxes,
+        // pero apunta a otra acción del controller antes de enviarlo. ---
+        var sacBtn = document.getElementById("bulk-sac-btn");
+        var sacModal = document.getElementById("bulk-sac-modal");
+        var sacCountEl = document.getElementById("bulk-sac-count");
+
+        if (sacBtn && sacModal) {
+            sacBtn.addEventListener("click", function () {
+                var checked = selectedCheckboxes();
+                if (checked.length === 0) {
+                    alert("Seleccioná al menos un caso.");
+                    return;
+                }
+                sacCountEl.textContent = checked.length;
+                sacModal.hidden = false;
+            });
+
+            document.getElementById("bulk-sac-cancel-btn").addEventListener("click", function () { sacModal.hidden = true; });
+            document.getElementById("bulk-sac-close-btn").addEventListener("click", function () { sacModal.hidden = true; });
+            sacModal.addEventListener("click", function (e) { if (e.target === sacModal) sacModal.hidden = true; });
+            document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !sacModal.hidden) sacModal.hidden = true; });
+
+            document.getElementById("bulk-sac-confirm-btn").addEventListener("click", function () {
+                form.action = "@Url.Action("BulkConfirmResolution", "InternalCases")";
+                form.submit();
+            });
+        }
     });
 </script>

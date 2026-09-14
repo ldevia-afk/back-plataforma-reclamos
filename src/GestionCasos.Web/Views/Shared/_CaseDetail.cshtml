@@ -1,3 +1,4 @@
+@using System.Text.Json
 @model CaseDetailViewModel
 
 <h1>Caso @Model.Number</h1>
@@ -14,6 +15,7 @@
         <tr><th>Grupo resolutor</th><td>@(Model.ResolverGroupName ?? "Sin asignar")</td></tr>
         @if (Model.CanManage)
         {
+            <tr><th>Miembro asignado</th><td>@(Model.AssignedUserName ?? "Sin asignar")</td></tr>
             <tr><th>Categoría</th><td>@(Model.CategoryName ?? "Sin categorizar")</td></tr>
         }
         <tr><th>Creado por</th><td>@Model.CreatedByName</td></tr>
@@ -51,120 +53,36 @@ else if (Model.Status == CaseStatus.Resuelto && !Model.CanManage)
 
 @if (Model.CanManage)
 {
-    <div class="gc-card">
-        <div class="gc-card-title">Gestión del caso</div>
-
-        <form asp-controller="InternalCases" asp-action="AssignGroup" method="post">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.Id" />
-            <div class="gc-filters">
-                <div class="gc-form-group">
-                    <label class="gc-label">Derivar a grupo resolutor</label>
-                    <select name="resolverGroupId" class="gc-select" asp-items="Model.AvailableGroups.Select(g => new SelectListItem(g.Name, g.Id.ToString()))">
-                        <option value="">-- Sin grupo --</option>
-                    </select>
-                </div>
-            </div>
-            <div class="gc-form-group">
-                <label class="gc-label">Comentario / observación (opcional)</label>
-                <textarea name="comment" class="gc-input" rows="2" placeholder="Ej: se deriva por incidencia de hardware, favor priorizar."></textarea>
-            </div>
-            <button type="submit" class="gc-btn">Derivar</button>
-        </form>
-
-        <form asp-controller="InternalCases" asp-action="ChangeStatus" method="post" style="margin-top:14px;">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.Id" />
-            <div class="gc-filters">
-                <div class="gc-form-group">
-                    <label class="gc-label">Cambiar estado</label>
-                    <select id="new-status-select" name="newStatus" class="gc-select" asp-items="Html.GetEnumSelectList<CaseStatus>()"></select>
-                </div>
-            </div>
-            <div id="resolution-comment-box" class="gc-alert" style="background:#fff4de;color:#92600a;" hidden>
-                <div class="gc-form-group" style="margin-bottom:0;">
-                    <label class="gc-label">Comentario de resolución (obligatorio)</label>
-                    <p class="gc-hint" style="margin-top:0;">
-                        Contale al cliente qué se hizo para resolver el caso. Mesa de Ayuda va a revisar este
-                        mensaje antes de que el cliente pueda verlo.
-                    </p>
-                    <textarea id="resolution-comment-input" name="resolutionComment" class="gc-input" rows="3"></textarea>
-                </div>
-            </div>
-            <button type="submit" class="gc-btn" style="margin-top:10px;">Actualizar estado</button>
-        </form>
-
-        <form asp-controller="InternalCases" asp-action="AssignCategory" method="post" class="gc-filters" style="margin-top:14px;">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="id" value="@Model.Id" />
-            <div class="gc-form-group">
-                <label class="gc-label">Categorizar caso</label>
-                <select asp-for="CategoryId" class="gc-select" asp-items="Model.AvailableCategories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
-                    <option value="">-- Sin categorizar --</option>
-                </select>
-            </div>
-            <button type="submit" class="gc-btn">Guardar categoría</button>
-        </form>
+    <div class="gc-card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <button type="button" id="manage-case-btn" class="gc-btn">Gestionar caso</button>
+        @if (Model.PendingSacConfirmation)
+        {
+            <button type="button" id="sac-btn" class="gc-btn gc-badge-sac">Pendiente confirmación SAC</button>
+        }
+        @if (Model.ResolutionConfirmed && Model.Status == CaseStatus.Resuelto)
+        {
+            <span class="gc-alert gc-alert-success" style="margin:0;">
+                Confirmado y enviado al cliente el @Model.ResolutionConfirmedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm").
+            </span>
+        }
     </div>
 }
 
-@if (Model.CanManage && Model.Status == CaseStatus.Resuelto)
-{
-    if (Model.ResolutionConfirmed)
-    {
-        <div class="gc-card">
-            <div class="gc-card-title">Mensaje al cliente</div>
-            <p class="gc-alert gc-alert-success">
-                Confirmado y enviado al cliente el @Model.ResolutionConfirmedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm").
-            </p>
-            <p>@Model.ResolutionComment</p>
-        </div>
-    }
-    else if (!string.IsNullOrWhiteSpace(Model.ResolutionComment))
-    {
-        <div class="gc-card">
-            <div class="gc-card-title">Confirmar mensaje al cliente (Mesa de Ayuda)</div>
-            <p class="gc-hint">
-                Revisá el comentario de resolución del grupo resolutor. Podés editarlo antes de enviarlo:
-                es lo que va a leer el cliente sobre el caso @Model.Number
-                (sucursal @Model.BranchName, inicio @Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
-                finalización @Model.ResolvedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
-                estado final @Model.Status.ToDisplayName()).
-            </p>
-            <form asp-controller="InternalCases" asp-action="ConfirmResolution" method="post">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="id" value="@Model.Id" />
-                <div class="gc-form-group">
-                    <label class="gc-label">Mensaje para el cliente</label>
-                    <textarea name="clientMessage" class="gc-input" rows="4">@Model.ResolutionComment</textarea>
-                </div>
-                <button type="submit" class="gc-btn">Guardar y enviar al cliente</button>
-            </form>
-        </div>
-    }
-}
-
 <div class="gc-card">
-    <div class="gc-card-title">Historial de estados</div>
+    <div class="gc-card-title">Historial del caso</div>
     <ul class="gc-timeline">
-        @foreach (var h in Model.StatusHistory)
+        @foreach (var h in Model.History)
         {
             <li>
-                <strong>@h.Status.ToDisplayName()</strong> — @h.ChangedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                @if (h.ChangedByName != null) { <text> · @h.ChangedByName</text> }
-            </li>
-        }
-    </ul>
-</div>
-
-<div class="gc-card">
-    <div class="gc-card-title">Historial de derivaciones</div>
-    <ul class="gc-timeline">
-        @foreach (var h in Model.GroupHistory)
-        {
-            <li>
-                <strong>@h.GroupName</strong> — @h.ChangedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                @if (h.ChangedByName != null) { <text> · @h.ChangedByName</text> }
+                <strong>@h.Title</strong> — @h.OccurredAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                @if (h.ChangedByName != null)
+                {
+                    <text> · @h.ChangedByName</text>
+                    if (h.ChangedByGroupNames != null)
+                    {
+                        <text> (@h.ChangedByGroupNames)</text>
+                    }
+                }
                 @if (!string.IsNullOrWhiteSpace(h.Comment))
                 {
                     <div class="gc-hint">"@h.Comment"</div>
@@ -176,23 +94,135 @@ else if (Model.Status == CaseStatus.Resuelto && !Model.CanManage)
 
 @if (Model.CanManage)
 {
+    var groupMembersJson = JsonSerializer.Serialize(
+        Model.AvailableGroups.ToDictionary(g => g.Id.ToString(), g => g.Members.Select(m => new { m.Id, m.Name }).ToList()));
+
+    <div id="manage-case-modal" class="gc-modal-overlay" hidden>
+        <div class="gc-modal">
+            <div class="gc-modal-header">
+                <div class="gc-modal-title">Gestionar caso @Model.Number</div>
+                <button type="button" id="manage-case-close-btn" class="gc-modal-close" aria-label="Cerrar">&times;</button>
+            </div>
+            <form asp-controller="InternalCases" asp-action="ManageCase" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="gc-form-group">
+                    <label class="gc-label">Grupo resolutor</label>
+                    <select name="resolverGroupId" id="manage-group-select" class="gc-select">
+                        <option value="">-- Sin grupo --</option>
+                        @foreach (var g in Model.AvailableGroups)
+                        {
+                            <option value="@g.Id" selected="@(g.Id == Model.ResolverGroupId ? "selected" : null)">@g.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="gc-form-group">
+                    <label class="gc-label">Miembro asignado (opcional)</label>
+                    <select name="assignedUserId" id="manage-member-select" class="gc-select" data-initial="@Model.AssignedUserId">
+                        <option value="">-- Sin miembro específico --</option>
+                    </select>
+                </div>
+                <div class="gc-form-group">
+                    <label class="gc-label">Categoría</label>
+                    <select asp-for="CategoryId" class="gc-select" asp-items="Model.AvailableCategories.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
+                        <option value="">-- Sin categorizar --</option>
+                    </select>
+                </div>
+                <div class="gc-form-group">
+                    <label class="gc-label">Estado</label>
+                    <select name="newStatus" class="gc-select">
+                        @foreach (var s in Enum.GetValues<CaseStatus>())
+                        {
+                            <option value="@((int)s)" selected="@(s == Model.Status ? "selected" : null)">@s.ToDisplayName()</option>
+                        }
+                    </select>
+                    <p class="gc-hint" style="margin-bottom:0;">Si lo pasás a Resuelto, el comentario de abajo se usa como detalle de la resolución para el cliente.</p>
+                </div>
+                <div class="gc-form-group">
+                    <label class="gc-label">Observaciones o comentarios</label>
+                    <textarea name="comment" class="gc-input" rows="3" placeholder="Observaciones sobre esta gestión (opcional, salvo al marcar Resuelto)."></textarea>
+                </div>
+
+                <div class="gc-modal-actions">
+                    <button type="button" id="manage-case-cancel-btn" class="gc-btn gc-btn-secondary">Cancelar</button>
+                    <button type="submit" class="gc-btn">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    if (Model.PendingSacConfirmation)
+    {
+        <div id="sac-modal" class="gc-modal-overlay" hidden>
+            <div class="gc-modal">
+                <div class="gc-modal-header">
+                    <div class="gc-modal-title">Confirmar mensaje al cliente (SAC)</div>
+                    <button type="button" id="sac-close-btn" class="gc-modal-close" aria-label="Cerrar">&times;</button>
+                </div>
+                <p class="gc-hint">
+                    Revisá el comentario de resolución del grupo resolutor. Podés editarlo antes de enviarlo:
+                    es lo que va a leer el cliente sobre el caso @Model.Number
+                    (sucursal @Model.BranchName, inicio @Model.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                    finalización @Model.ResolvedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm"),
+                    estado final @Model.Status.ToDisplayName()).
+                </p>
+                <form asp-controller="InternalCases" asp-action="ConfirmResolution" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="gc-form-group">
+                        <label class="gc-label">Mensaje para el cliente</label>
+                        <textarea name="clientMessage" class="gc-input" rows="4">@Model.ResolutionComment</textarea>
+                    </div>
+                    <div class="gc-modal-actions">
+                        <button type="button" id="sac-cancel-btn" class="gc-btn gc-btn-secondary">Cancelar</button>
+                        <button type="submit" class="gc-btn">Guardar y enviar al cliente</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            var statusSelect = document.getElementById("new-status-select");
-            var commentBox = document.getElementById("resolution-comment-box");
-            var commentInput = document.getElementById("resolution-comment-input");
-            if (!statusSelect || !commentBox || !commentInput) return;
+            var GROUP_MEMBERS = @Html.Raw(groupMembersJson);
 
-            var resueltoValue = "@((int)CaseStatus.Resuelto)";
-
-            function refresh() {
-                var isResuelto = statusSelect.value === resueltoValue;
-                commentBox.hidden = !isResuelto;
-                commentInput.required = isResuelto;
+            function wireModal(btnId, modalId, closeIds) {
+                var btn = document.getElementById(btnId);
+                var modal = document.getElementById(modalId);
+                if (!btn || !modal) return;
+                btn.addEventListener("click", function () { modal.hidden = false; });
+                closeIds.forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.addEventListener("click", function () { modal.hidden = true; });
+                });
+                modal.addEventListener("click", function (e) { if (e.target === modal) modal.hidden = true; });
+                document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !modal.hidden) modal.hidden = true; });
             }
 
-            statusSelect.addEventListener("change", refresh);
-            refresh();
+            wireModal("manage-case-btn", "manage-case-modal", ["manage-case-close-btn", "manage-case-cancel-btn"]);
+            wireModal("sac-btn", "sac-modal", ["sac-close-btn", "sac-cancel-btn"]);
+
+            var groupSelect = document.getElementById("manage-group-select");
+            var memberSelect = document.getElementById("manage-member-select");
+            if (groupSelect && memberSelect) {
+                function refreshMembers(preserveValue) {
+                    var members = GROUP_MEMBERS[groupSelect.value] || [];
+                    var valueToRestore = preserveValue !== undefined ? preserveValue : memberSelect.value;
+                    memberSelect.innerHTML = '<option value="">-- Sin miembro específico --</option>';
+                    members.forEach(function (m) {
+                        var opt = document.createElement("option");
+                        opt.value = m.Id;
+                        opt.textContent = m.Name;
+                        memberSelect.appendChild(opt);
+                    });
+                    if (members.some(function (m) { return String(m.Id) === String(valueToRestore); })) {
+                        memberSelect.value = valueToRestore;
+                    }
+                }
+                groupSelect.addEventListener("change", function () { refreshMembers(""); });
+                refreshMembers(memberSelect.getAttribute("data-initial") || "");
+            }
         });
     </script>
 }

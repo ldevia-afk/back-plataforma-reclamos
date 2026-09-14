@@ -99,45 +99,22 @@ public class InternalCasesController : GestionCasosControllerBase
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult AssignGroup(int id, int? resolverGroupId, string? comment)
+    public IActionResult ManageCase(int id, int? resolverGroupId, int? assignedUserId, int? categoryId, CaseStatus newStatus, string? comment)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        _caseService.AssignGroup(id, resolverGroupId, CurrentUser!.Id, comment);
-        TempData["Success"] = "Se actualizó el grupo resolutor del caso.";
-        return RedirectToAction(nameof(Details), new { id });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult AssignCategory(int id, int? categoryId)
-    {
-        var guard = RequireProfile(UserProfileType.Interno);
-        if (guard != null) return guard;
-
-        _caseService.AssignCategory(id, categoryId);
-        TempData["Success"] = "Se actualizó la categoría del caso.";
-        return RedirectToAction(nameof(Details), new { id });
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult ChangeStatus(int id, CaseStatus newStatus, string? resolutionComment)
-    {
-        var guard = RequireProfile(UserProfileType.Interno);
-        if (guard != null) return guard;
-
-        if (newStatus == CaseStatus.Resuelto && string.IsNullOrWhiteSpace(resolutionComment))
+        var error = _caseService.ManageCase(id, CurrentUser!.Id, resolverGroupId, assignedUserId, categoryId, newStatus, comment);
+        if (error != null)
         {
-            TempData["Error"] = "Para marcar el caso como Resuelto tenés que agregar un comentario con el detalle de la resolución.";
-            return RedirectToAction(nameof(Details), new { id });
+            TempData["Error"] = error;
         }
-
-        _caseService.ChangeStatus(id, newStatus, CurrentUser!.Id, resolutionComment);
-        TempData["Success"] = newStatus == CaseStatus.Resuelto
-            ? "Caso marcado como Resuelto. Se derivó a Mesa de Ayuda para confirmar el mensaje al cliente."
-            : "Se actualizó el estado del caso.";
+        else
+        {
+            TempData["Success"] = newStatus == CaseStatus.Resuelto
+                ? "Se guardó la gestión del caso. Al quedar Resuelto se derivó a Mesa de Ayuda para confirmar el mensaje al cliente."
+                : "Se guardó la gestión del caso.";
+        }
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -176,6 +153,42 @@ public class InternalCasesController : GestionCasosControllerBase
         TempData["Success"] = idsToUpdate.Count == 1
             ? $"Se actualizó 1 caso a estado {newStatus.ToDisplayName()}."
             : $"Se actualizaron {idsToUpdate.Count} casos a estado {newStatus.ToDisplayName()}.";
+        return BackToInbox();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult BulkConfirmResolution(List<int>? caseIds, string? returnUrl)
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        IActionResult BackToInbox() => Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
+
+        if (caseIds == null || caseIds.Count == 0)
+        {
+            TempData["Error"] = "Seleccioná al menos un caso.";
+            return BackToInbox();
+        }
+
+        var user = CurrentUser!;
+        var allowedCases = _caseService.GetCasesForInternalUser(user).ToDictionary(c => c.Id);
+        var eligibleIds = caseIds
+            .Distinct()
+            .Where(id => allowedCases.TryGetValue(id, out var c)
+                && c.Status == CaseStatus.Resuelto
+                && !c.ResolutionConfirmed
+                && !string.IsNullOrWhiteSpace(c.ResolutionComment))
+            .ToList();
+
+        foreach (var id in eligibleIds)
+        {
+            _caseService.ConfirmResolution(id, allowedCases[id].ResolutionComment!, user.Id);
+        }
+
+        TempData["Success"] = eligibleIds.Count == 1
+            ? "Se envió la confirmación al cliente de 1 caso."
+            : $"Se envió la confirmación al cliente de {eligibleIds.Count} casos.";
         return BackToInbox();
     }
 

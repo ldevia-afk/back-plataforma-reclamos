@@ -25,7 +25,9 @@ public static class CasesSharedMapper
             Status = c.Status,
             ResolverGroupName = group?.Name,
             CreatedAtUtc = c.CreatedAtUtc,
-            Description = c.Description
+            Description = c.Description,
+            ResolutionConfirmed = c.ResolutionConfirmed,
+            ResolutionComment = c.ResolutionComment
         };
     }
 
@@ -36,6 +38,7 @@ public static class CasesSharedMapper
         var category = c.CategoryId.HasValue ? catalog.GetCategory(c.CategoryId.Value) : null;
         var group = c.AssignedGroupId.HasValue ? catalog.GetResolverGroup(c.AssignedGroupId.Value) : null;
         var creator = catalog.GetUser(c.CreatedByUserId);
+        var assignedUser = c.AssignedUserId.HasValue ? catalog.GetUser(c.AssignedUserId.Value) : null;
 
         return new CaseDetailViewModel
         {
@@ -51,38 +54,68 @@ public static class CasesSharedMapper
             Status = c.Status,
             CreatedByName = creator?.Name ?? "(usuario eliminado)",
             CreatedAtUtc = c.CreatedAtUtc,
+            ResolverGroupId = c.AssignedGroupId,
             ResolverGroupName = group?.Name,
+            AssignedUserId = c.AssignedUserId,
+            AssignedUserName = assignedUser?.Name,
             CanManage = canManage,
             AvailableGroups = canManage
-                ? catalog.GetResolverGroups(countryId: c.CountryId).Select(g => new ResolverGroupOption { Id = g.Id, Name = g.Name }).ToList()
+                ? catalog.GetResolverGroups(countryId: c.CountryId).Select(g => new ResolverGroupOption
+                {
+                    Id = g.Id,
+                    Name = g.Name,
+                    Members = g.MemberUserIds
+                        .Select(catalog.GetUser)
+                        .Where(u => u != null)
+                        .Select(u => new UserOption { Id = u!.Id, Name = u.Name })
+                        .ToList()
+                }).ToList()
                 : new List<ResolverGroupOption>(),
             AvailableCategories = canManage
                 ? catalog.GetCategories().Select(cat => new CategoryOption { Id = cat.Id, Name = cat.Name }).ToList()
                 : new List<CategoryOption>(),
-            ResolvedAtUtc = c.StatusHistory.LastOrDefault(h => h.Status == CaseStatus.Resuelto)?.ChangedAtUtc,
+            ResolvedAtUtc = c.History.LastOrDefault(h => h.EventType == CaseEventType.StatusChanged && h.Status == CaseStatus.Resuelto)?.OccurredAtUtc,
             ResolutionComment = c.ResolutionComment,
             ResolutionConfirmed = c.ResolutionConfirmed,
             ResolutionConfirmedAtUtc = c.ResolutionConfirmedAtUtc,
             AssignedToHelpDesk = group?.IsHelpDesk ?? false,
-            StatusHistory = c.StatusHistory
-                .OrderBy(h => h.ChangedAtUtc)
-                .Select(h => new StatusHistoryRow
-                {
-                    Status = h.Status,
-                    ChangedAtUtc = h.ChangedAtUtc,
-                    ChangedByName = h.ChangedByUserId.HasValue ? catalog.GetUser(h.ChangedByUserId.Value)?.Name : null
-                })
-                .ToList(),
-            GroupHistory = c.GroupHistory
-                .OrderBy(h => h.ChangedAtUtc)
-                .Select(h => new GroupHistoryRow
-                {
-                    GroupName = h.ResolverGroupId.HasValue ? (catalog.GetResolverGroup(h.ResolverGroupId.Value)?.Name ?? "(grupo eliminado)") : "Sin grupo",
-                    ChangedAtUtc = h.ChangedAtUtc,
-                    ChangedByName = h.ChangedByUserId.HasValue ? catalog.GetUser(h.ChangedByUserId.Value)?.Name : null,
-                    Comment = h.Comment
-                })
+            History = c.History
+                .OrderBy(h => h.OccurredAtUtc)
+                .Select(h => ToHistoryRow(h, catalog, canManage))
                 .ToList()
+        };
+    }
+
+    private static CaseHistoryRow ToHistoryRow(CaseHistoryEntry h, ICatalogService catalog, bool canManage)
+    {
+        var changedByUser = h.ChangedByUserId.HasValue ? catalog.GetUser(h.ChangedByUserId.Value) : null;
+        string? groupNames = null;
+        if (changedByUser != null && changedByUser.ResolverGroupIds.Count > 0)
+        {
+            groupNames = string.Join(", ", changedByUser.ResolverGroupIds
+                .Select(catalog.GetResolverGroup)
+                .Where(g => g != null)
+                .Select(g => g!.Name));
+        }
+
+        // El comentario cargado al marcar Resuelto es el borrador interno del grupo
+        // resolutor: Mesa de Ayuda puede editarlo antes de enviarlo (ver ConfirmResolution),
+        // así que nunca debe mostrársele al cliente, esté confirmado o no. Lo que el
+        // cliente sí puede ver es el mensaje final del evento ResolutionConfirmed.
+        var isResolutionDraftComment = h.EventType == CaseEventType.StatusChanged && h.Status == CaseStatus.Resuelto;
+        var comment = (!canManage && isResolutionDraftComment) ? null : h.Comment;
+
+        return new CaseHistoryRow
+        {
+            EventType = h.EventType,
+            OccurredAtUtc = h.OccurredAtUtc,
+            ChangedByName = changedByUser?.Name ?? (h.ChangedByUserId.HasValue ? "(usuario eliminado)" : "Sistema"),
+            ChangedByGroupNames = string.IsNullOrWhiteSpace(groupNames) ? null : groupNames,
+            Status = h.Status,
+            GroupName = h.ResolverGroupId.HasValue ? (catalog.GetResolverGroup(h.ResolverGroupId.Value)?.Name ?? "(grupo eliminado)") : null,
+            AssignedUserName = h.AssignedUserId.HasValue ? catalog.GetUser(h.AssignedUserId.Value)?.Name : null,
+            CategoryName = h.CategoryId.HasValue ? (catalog.GetCategory(h.CategoryId.Value)?.Name ?? "(categoría eliminada)") : null,
+            Comment = comment
         };
     }
 }

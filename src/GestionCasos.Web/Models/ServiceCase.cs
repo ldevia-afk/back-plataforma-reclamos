@@ -25,12 +25,14 @@ public class ServiceCase
     public int CountryId { get; set; }
     public CaseStatus Status { get; set; } = CaseStatus.Inicial;
     public int? AssignedGroupId { get; set; }
+    /// <summary>Miembro específico del grupo resolutor asignado al caso (opcional).</summary>
+    public int? AssignedUserId { get; set; }
 
     public int CreatedByUserId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 
-    public List<CaseStatusHistoryEntry> StatusHistory { get; set; } = new();
-    public List<CaseGroupHistoryEntry> GroupHistory { get; set; } = new();
+    /// <summary>Historial unificado: creación, cambios de estado, derivaciones, categorización y confirmación de resolución.</summary>
+    public List<CaseHistoryEntry> History { get; set; } = new();
 
     /// <summary>
     /// Comentario con el detalle de la resolución, cargado por el grupo resolutor

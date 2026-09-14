@@ -24,7 +24,13 @@
                 <td>@item.BranchName</td>
                 <td>@item.Type.ToDisplayName()</td>
                 <td>@(item.CategoryName ?? "Sin categorizar")</td>
-                <td><span class="gc-status gc-status-@item.Status">@item.Status.ToDisplayName()</span></td>
+                <td>
+                    <span class="gc-status gc-status-@item.Status">@item.Status.ToDisplayName()</span>
+                    @if (item.PendingSacConfirmation)
+                    {
+                        <span class="gc-badge-sac" title="Resuelto, pendiente de confirmar y enviar al cliente">Pendiente confirmación SAC</span>
+                    }
+                </td>
                 <td>@(item.ResolverGroupName ?? "Sin asignar")</td>
                 <td>@item.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                 <td><a asp-controller="InternalCases" asp-action="Details" asp-route-id="@item.Id">Gestionar</a></td>

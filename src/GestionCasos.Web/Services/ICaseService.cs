@@ -26,10 +26,19 @@ public interface ICaseService
     /// </summary>
     void ChangeStatus(int caseId, CaseStatus newStatus, int changedByUserId, string? resolutionComment = null);
 
-    void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId, string? comment);
+    void AssignGroup(int caseId, int? resolverGroupId, int changedByUserId, string? comment, int? assignedUserId = null);
 
     /// <summary>Asigna (o quita) la categoría interna de un caso. Sólo la usa el perfil interno.</summary>
-    void AssignCategory(int caseId, int? categoryId);
+    void AssignCategory(int caseId, int? categoryId, int changedByUserId);
+
+    /// <summary>
+    /// Acción combinada del popup "Gestionar caso": aplica sólo los campos que
+    /// realmente cambiaron (grupo/miembro, categoría, estado) y usa el mismo
+    /// comentario de observaciones para el evento principal que se genere.
+    /// Devuelve un mensaje de error si el estado nuevo es Resuelto y no hay
+    /// comentario de resolución disponible.
+    /// </summary>
+    string? ManageCase(int caseId, int changedByUserId, int? resolverGroupId, int? assignedUserId, int? categoryId, CaseStatus newStatus, string? comment);
 
     /// <summary>
     /// Mesa de Ayuda confirma (y opcionalmente edita) el mensaje de resolución y

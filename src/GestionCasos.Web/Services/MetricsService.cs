@@ -40,10 +40,13 @@ public class MetricsService : IMetricsService
             var resolutionDurations = new List<double>();
             foreach (var c in caseList)
             {
-                var resolvedEntry = c.StatusHistory.Where(h => h.Status == CaseStatus.Resuelto).OrderBy(h => h.ChangedAtUtc).FirstOrDefault();
+                var resolvedEntry = c.History
+                    .Where(h => h.EventType == CaseEventType.StatusChanged && h.Status == CaseStatus.Resuelto)
+                    .OrderBy(h => h.OccurredAtUtc)
+                    .FirstOrDefault();
                 if (resolvedEntry != null)
                 {
-                    resolutionDurations.Add((resolvedEntry.ChangedAtUtc - c.CreatedAtUtc).TotalHours);
+                    resolutionDurations.Add((resolvedEntry.OccurredAtUtc - c.CreatedAtUtc).TotalHours);
                 }
             }
             vm.AvgResolutionHours = resolutionDurations.Count > 0 ? resolutionDurations.Average() : null;
@@ -85,14 +88,18 @@ public class MetricsService : IMetricsService
             var durationsByStatus = new Dictionary<CaseStatus, List<double>>();
             foreach (var c in caseList)
             {
-                var ordered = c.StatusHistory.OrderBy(h => h.ChangedAtUtc).ToList();
+                var ordered = c.History
+                    .Where(h => h.EventType == CaseEventType.Created || h.EventType == CaseEventType.StatusChanged)
+                    .OrderBy(h => h.OccurredAtUtc)
+                    .ToList();
                 for (var i = 0; i < ordered.Count - 1; i++)
                 {
-                    var hours = (ordered[i + 1].ChangedAtUtc - ordered[i].ChangedAtUtc).TotalHours;
-                    if (!durationsByStatus.TryGetValue(ordered[i].Status, out var list))
+                    var hours = (ordered[i + 1].OccurredAtUtc - ordered[i].OccurredAtUtc).TotalHours;
+                    var status = ordered[i].Status!.Value;
+                    if (!durationsByStatus.TryGetValue(status, out var list))
                     {
                         list = new List<double>();
-                        durationsByStatus[ordered[i].Status] = list;
+                        durationsByStatus[status] = list;
                     }
                     list.Add(hours);
                 }
@@ -107,11 +114,14 @@ public class MetricsService : IMetricsService
             var transitions = new Dictionary<(int? from, int? to), List<double>>();
             foreach (var c in caseList)
             {
-                var ordered = c.GroupHistory.OrderBy(h => h.ChangedAtUtc).ToList();
+                var ordered = c.History
+                    .Where(h => h.EventType == CaseEventType.GroupAssigned)
+                    .OrderBy(h => h.OccurredAtUtc)
+                    .ToList();
                 for (var i = 0; i < ordered.Count - 1; i++)
                 {
                     if (!ordered[i].ResolverGroupId.HasValue) continue; // sólo cuenta como "handoff" si venía de un grupo asignado
-                    var hours = (ordered[i + 1].ChangedAtUtc - ordered[i].ChangedAtUtc).TotalHours;
+                    var hours = (ordered[i + 1].OccurredAtUtc - ordered[i].OccurredAtUtc).TotalHours;
                     handoffDurations.Add(hours);
 
                     var key = (ordered[i].ResolverGroupId, ordered[i + 1].ResolverGroupId);
