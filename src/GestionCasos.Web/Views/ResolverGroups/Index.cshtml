@@ -1,4 +1,4 @@
-@model List<ResolverGroup>
+@model ResolverGroupListViewModel
 @{
     ViewData["Title"] = "Grupos resolutores";
 }
@@ -6,11 +6,17 @@
 
 <a class="gc-btn" asp-controller="ResolverGroups" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo grupo</a>
 
+<form method="get" class="gc-form-group" style="max-width:360px;">
+    <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
+    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por nombre o país..."
+           data-debounce-submit="400" />
+</form>
+
 <div class="gc-card">
     <table class="gc-table">
         <thead><tr><th>Nombre</th><th>País</th><th>Miembros</th><th></th></tr></thead>
         <tbody>
-            @foreach (var group in Model)
+            @foreach (var group in Model.Paging.Items)
             {
                 <tr>
                     <td>
@@ -20,8 +26,8 @@
                             <span class="gc-user-badge">Mesa de Ayuda</span>
                         }
                     </td>
-                    <td>@ViewBag.CountryNames[group.CountryId]</td>
-                    <td>@group.MemberUserIds.Count</td>
+                    <td>@group.CountryName</td>
+                    <td>@group.MemberCount</td>
                     <td>
                         <a asp-controller="ResolverGroups" asp-action="Edit" asp-route-id="@group.Id">Editar</a>
                         &nbsp;·&nbsp;
@@ -32,6 +38,11 @@
                     </td>
                 </tr>
             }
+            @if (Model.Paging.Items.Count == 0)
+            {
+                <tr><td colspan="4" class="gc-hint">Ningún grupo coincide con la búsqueda.</td></tr>
+            }
         </tbody>
     </table>
+    @await Html.PartialAsync("_Pagination", Model.Paging)
 </div>

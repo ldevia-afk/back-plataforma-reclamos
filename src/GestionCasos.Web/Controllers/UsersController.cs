@@ -15,7 +15,7 @@ public class UsersController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index()
+    public IActionResult Index(string? q, int? page, int? pageSize)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
@@ -23,16 +23,36 @@ public class UsersController : GestionCasosControllerBase
         var users = _catalogService.GetUsers(includeInactive: true);
         var clients = _catalogService.GetClients();
         var groups = _catalogService.GetResolverGroups();
+        var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
 
-        ViewBag.CountryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.ClientNamesByUserId = users.ToDictionary(
-            u => u.Id,
-            u => string.Join(", ", u.AssignedClientIds.Select(cid => clients.FirstOrDefault(c => c.Id == cid)?.Name).Where(n => n != null)));
-        ViewBag.GroupNamesByUserId = users.ToDictionary(
-            u => u.Id,
-            u => string.Join(", ", u.ResolverGroupIds.Select(gid => groups.FirstOrDefault(g => g.Id == gid)?.Name).Where(n => n != null)));
+        var items = users.Select(u => new UserListItemViewModel
+        {
+            Id = u.Id,
+            Name = u.Name,
+            Email = u.Email,
+            ProfileType = u.ProfileType,
+            CountryName = countryNames.TryGetValue(u.CountryId, out var cn) ? cn : string.Empty,
+            ScopeDisplay = u.ProfileType == UserProfileType.Cliente
+                ? string.Join(", ", u.AssignedClientIds.Select(cid => clients.FirstOrDefault(c => c.Id == cid)?.Name).Where(n => n != null))
+                : (u.HasAllBranches ? "Todas las sucursales" : $"{u.AssignedBranchIds.Count} sucursal(es)"),
+            GroupNames = string.Join(", ", u.ResolverGroupIds.Select(gid => groups.FirstOrDefault(g => g.Id == gid)?.Name).Where(n => n != null)),
+            IsActive = u.IsActive
+        }).AsEnumerable();
 
-        return View(users);
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            items = items.Where(u =>
+                u.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                u.ProfileDisplay.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                u.CountryName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                u.ScopeDisplay.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                u.GroupNames.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                (u.IsActive ? "activo" : "inactivo").Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var vm = new UserListViewModel { Q = q, Paging = items.ToPagedResult(page, pageSize) };
+        return View(vm);
     }
 
     public IActionResult Details(int id)

@@ -1,46 +1,36 @@
-@model List<AppUser>
+@model UserListViewModel
 @{
     ViewData["Title"] = "Usuarios";
-    var clientNamesByUserId = (Dictionary<int, string>)ViewBag.ClientNamesByUserId;
-    var groupNamesByUserId = (Dictionary<int, string>)ViewBag.GroupNamesByUserId;
 }
 <h1>Usuarios</h1>
 
 <a class="gc-btn" asp-controller="Users" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo usuario</a>
 
-<div class="gc-form-group" style="max-width:360px;">
-    <input class="gc-input" type="search" placeholder="Buscar por nombre, email, país, alcance o grupo..."
-           data-live-search-for="users-table" data-no-results-for="no-results-hint" />
-</div>
+<form method="get" class="gc-form-group" style="max-width:360px;">
+    <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
+    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por nombre, email, país, alcance o grupo..."
+           data-debounce-submit="400" />
+</form>
 
 <div class="gc-card">
-    <table class="gc-table" id="users-table">
+    <table class="gc-table">
         <thead><tr><th>Nombre</th><th>Email</th><th>Perfil</th><th>País</th><th>Alcance</th><th>Estado</th><th></th></tr></thead>
         <tbody>
-            @foreach (var user in Model)
+            @foreach (var user in Model.Paging.Items)
             {
-                var profileDisplay = user.ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno";
-                var countryName = (string)ViewBag.CountryNames[user.CountryId];
-                var scopeDisplay = user.ProfileType == UserProfileType.Cliente
-                    ? clientNamesByUserId[user.Id]
-                    : (user.HasAllBranches ? "Todas las sucursales" : $"{user.AssignedBranchIds.Count} sucursal(es)");
-                var groupNames = groupNamesByUserId[user.Id];
-                var statusDisplay = user.IsActive ? "Activo" : "Inactivo";
-                var searchText = string.Join(" ", new[] { user.Name, user.Email, profileDisplay, countryName, scopeDisplay, groupNames, statusDisplay }).ToLowerInvariant();
-
-                <tr data-search="@searchText">
+                <tr>
                     <td>@user.Name</td>
                     <td>@user.Email</td>
-                    <td>@profileDisplay</td>
-                    <td>@countryName</td>
+                    <td>@user.ProfileDisplay</td>
+                    <td>@user.CountryName</td>
                     <td>
-                        @scopeDisplay
-                        @if (!string.IsNullOrEmpty(groupNames))
+                        @user.ScopeDisplay
+                        @if (!string.IsNullOrEmpty(user.GroupNames))
                         {
-                            <div class="gc-hint">Grupos: @groupNames</div>
+                            <div class="gc-hint">Grupos: @user.GroupNames</div>
                         }
                     </td>
-                    <td><span class="gc-status @(user.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@statusDisplay</span></td>
+                    <td><span class="gc-status @(user.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@(user.IsActive ? "Activo" : "Inactivo")</span></td>
                     <td>
                         <a asp-controller="Users" asp-action="Details" asp-route-id="@user.Id">Ver</a>
                         &nbsp;·&nbsp;
@@ -63,7 +53,11 @@
                     </td>
                 </tr>
             }
+            @if (Model.Paging.Items.Count == 0)
+            {
+                <tr><td colspan="7" class="gc-hint">Ningún usuario coincide con la búsqueda.</td></tr>
+            }
         </tbody>
     </table>
-    <p id="no-results-hint" class="gc-hint" hidden>Ningún usuario coincide con la búsqueda.</p>
+    @await Html.PartialAsync("_Pagination", Model.Paging)
 </div>

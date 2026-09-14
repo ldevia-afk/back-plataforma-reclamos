@@ -107,15 +107,31 @@ public class GroupHistoryRow
 
 public class InternalInboxViewModel
 {
+    /// <summary>Ítems a mostrar: la página actual en la vista lista simple, o todos los que matchean el filtro cuando se agrupa por tipo.</summary>
     public List<CaseListItemViewModel> AllCases { get; set; } = new();
     public List<IGrouping<string, CaseListItemViewModel>> GroupedByType { get; set; } = new();
+
+    /// <summary>Paginado remoto: sólo aplica a la vista "lista simple" (agrupar por tipo muestra el total filtrado como reporte).</summary>
+    public PagedResult<CaseListItemViewModel>? Paging { get; set; }
 
     public List<CategoryOption> Categories { get; set; } = new();
     public List<ResolverGroupOption> ResolverGroups { get; set; } = new();
 
+    public string? Q { get; set; }
     public CaseType? FilterType { get; set; }
     public int? FilterCategoryId { get; set; }
     public CaseStatus? FilterStatus { get; set; }
     public int? FilterGroupId { get; set; }
+    /// <summary>Filtra por fecha de registro del caso (CreatedAtUtc), en la zona horaria local.</summary>
+    public DateOnly? DateFrom { get; set; }
+    public DateOnly? DateTo { get; set; }
     public bool GroupByType { get; set; }
+}
+
+public class ClientCaseListViewModel
+{
+    public PagedResult<CaseListItemViewModel> Paging { get; set; } = new();
+    public string? Q { get; set; }
+    public DateOnly? DateFrom { get; set; }
+    public DateOnly? DateTo { get; set; }
 }

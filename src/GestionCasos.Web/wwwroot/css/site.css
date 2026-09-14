@@ -262,6 +262,46 @@ h2 { font-size: 18px; }
 .gc-status-Asignado { background: #fff4de; color: #92600a; }
 .gc-status-EnAnalisis { background: #e5edff; color: #2043a0; }
 .gc-status-Resuelto { background: var(--gc-success-bg); color: var(--gc-success-text); }
+.gc-status-Cerrado { background: #eaeaf2; color: #45455c; }
+
+/* --- Flujo de estados (chevrones) --- */
+.gc-status-flow {
+    display: flex;
+    width: 100%;
+    margin: 4px 0 8px;
+}
+
+.gc-status-flow-step {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    padding: 0 14px;
+    background: #e2e6ec;
+    clip-path: polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%, 10% 50%);
+}
+.gc-status-flow-step:first-child {
+    clip-path: polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%);
+}
+.gc-status-flow-step:last-child {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 10% 50%);
+}
+.gc-status-flow-step:not(:first-child) { margin-left: -14px; }
+
+.gc-status-flow-step-future { background: #e2e6ec; color: var(--gc-text-muted); }
+.gc-status-flow-step-done { background: var(--gc-blue-dark); color: #fff; z-index: 1; }
+.gc-status-flow-step-current { background: var(--gc-blue); color: #fff; z-index: 2; }
+
+@media (max-width: 640px) {
+    .gc-status-flow { flex-wrap: wrap; }
+    .gc-status-flow-step { flex: 1 1 45%; margin-top: 4px; clip-path: none !important; border-radius: 6px; margin-left: 4px !important; }
+}
 
 /* --- Metrics --- */
 .gc-metric-grid {
@@ -322,6 +362,95 @@ h2 { font-size: 18px; }
     height: 10px;
     border-radius: 50%;
     background: var(--gc-blue);
+}
+
+.gc-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.gc-pagination-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+
+.gc-pagination-link {
+    display: inline-block;
+    min-width: 30px;
+    text-align: center;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--gc-text);
+    border: 1px solid transparent;
+}
+.gc-pagination-link:hover { background: #eef4ff; text-decoration: none; }
+
+.gc-pagination-current {
+    background: var(--gc-blue);
+    color: #fff;
+    font-weight: 600;
+}
+.gc-pagination-current:hover { background: var(--gc-blue); }
+
+.gc-pagination-disabled {
+    color: var(--gc-text-muted);
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.gc-pagination-ellipsis {
+    color: var(--gc-text-muted);
+    padding: 0 4px;
+    font-size: 13px;
+}
+
+.gc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 16px;
+}
+
+.gc-modal {
+    background: #fff;
+    border-radius: 10px;
+    padding: 22px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.gc-modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gc-blue-dark);
+    margin-bottom: 10px;
+}
+
+.gc-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.gc-bulk-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
 }
 
 .gc-user-picker-grid {

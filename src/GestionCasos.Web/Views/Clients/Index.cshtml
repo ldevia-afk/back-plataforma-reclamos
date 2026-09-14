@@ -1,4 +1,4 @@
-@model List<Client>
+@model ClientListViewModel
 @{
     ViewData["Title"] = "Clientes y sucursales";
 }
@@ -8,26 +8,23 @@
 <a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Branches" style="margin-bottom:16px;display:inline-block;">Ver sucursales</a>
 <a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Import" style="margin-bottom:16px;display:inline-block;">Importar desde Excel</a>
 
-<div class="gc-form-group" style="max-width:360px;">
-    <input class="gc-input" type="search" placeholder="Buscar por código, nombre o país..."
-           data-live-search-for="clients-table" data-no-results-for="clients-no-results" />
-</div>
+<form method="get" class="gc-form-group" style="max-width:360px;">
+    <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
+    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por código, nombre o país..."
+           data-debounce-submit="400" />
+</form>
 
 <div class="gc-card">
-    <table class="gc-table" id="clients-table">
+    <table class="gc-table">
         <thead><tr><th>Código</th><th>Nombre</th><th>País</th><th>Sucursales</th><th></th></tr></thead>
         <tbody>
-            @foreach (var client in Model)
+            @foreach (var client in Model.Paging.Items)
             {
-                var countryName = (string)ViewBag.CountryNames[client.CountryId];
-                var branchCount = (int)ViewBag.BranchCounts[client.Id];
-                var searchText = string.Join(" ", new[] { client.ExternalCode, client.Name, countryName }).ToLowerInvariant();
-
-                <tr data-search="@searchText">
+                <tr>
                     <td>@client.ExternalCode</td>
                     <td>@client.Name</td>
-                    <td>@countryName</td>
-                    <td>@branchCount</td>
+                    <td>@client.CountryName</td>
+                    <td>@client.BranchCount</td>
                     <td>
                         <a asp-controller="Clients" asp-action="Edit" asp-route-id="@client.Id">Editar / sucursales</a>
                         &nbsp;·&nbsp;
@@ -38,7 +35,11 @@
                     </td>
                 </tr>
             }
+            @if (Model.Paging.Items.Count == 0)
+            {
+                <tr><td colspan="5" class="gc-hint">Ningún cliente coincide con la búsqueda.</td></tr>
+            }
         </tbody>
     </table>
-    <p id="clients-no-results" class="gc-hint" hidden>Ningún cliente coincide con la búsqueda.</p>
+    @await Html.PartialAsync("_Pagination", Model.Paging)
 </div>

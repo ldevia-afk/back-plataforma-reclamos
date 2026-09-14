@@ -16,18 +16,36 @@ public class ClientsController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index()
+    public IActionResult Index(string? q, int? page, int? pageSize)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        var clients = _catalogService.GetClients();
-        ViewBag.CountryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
-        ViewBag.BranchCounts = clients.ToDictionary(c => c.Id, c => _catalogService.GetBranches(clientId: c.Id).Count);
-        return View(clients);
+        var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
+        var items = _catalogService.GetClients()
+            .Select(c => new ClientListItemViewModel
+            {
+                Id = c.Id,
+                ExternalCode = c.ExternalCode,
+                Name = c.Name,
+                CountryName = countryNames.TryGetValue(c.CountryId, out var cn) ? cn : string.Empty,
+                BranchCount = _catalogService.GetBranches(clientId: c.Id).Count
+            })
+            .AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            items = items.Where(c =>
+                c.ExternalCode.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.CountryName.Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var vm = new ClientListViewModel { Q = q, Paging = items.ToPagedResult(page, pageSize) };
+        return View(vm);
     }
 
-    public IActionResult Branches()
+    public IActionResult Branches(string? q, int? page, int? pageSize)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
@@ -52,9 +70,21 @@ public class ClientsController : GestionCasosControllerBase
                 };
             })
             .OrderBy(b => b.ClientName).ThenBy(b => b.Name)
-            .ToList();
+            .AsEnumerable();
 
-        return View(items);
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            items = items.Where(b =>
+                b.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                b.ClientName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                b.ClientCode.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                b.CountryName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                b.Address.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                (b.IsActive ? "activa" : "inactiva").Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var vm = new BranchListViewModel { Q = q, Paging = items.ToPagedResult(page, pageSize) };
+        return View(vm);
     }
 
     public IActionResult Create()

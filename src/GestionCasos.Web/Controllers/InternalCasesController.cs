@@ -18,40 +18,62 @@ public class InternalCasesController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index(CaseType? filterType, int? filterCategoryId, CaseStatus? filterStatus, int? filterGroupId, bool groupByType = true)
+    public IActionResult Index(
+        string? q, CaseType? filterType, int? filterCategoryId, CaseStatus? filterStatus, int? filterGroupId,
+        DateOnly? dateFrom, DateOnly? dateTo, bool groupByType = true, int? page = null, int? pageSize = null)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        var type = filterType;
-        var categoryId = filterCategoryId;
-        var status = filterStatus;
-        var groupId = filterGroupId;
-
         var user = CurrentUser!;
         var cases = _caseService.GetCasesForInternalUser(user).AsEnumerable();
 
-        if (type.HasValue) cases = cases.Where(c => c.Type == type.Value);
-        if (categoryId.HasValue) cases = cases.Where(c => c.CategoryId == categoryId.Value);
-        if (status.HasValue) cases = cases.Where(c => c.Status == status.Value);
-        if (groupId.HasValue) cases = cases.Where(c => c.AssignedGroupId == groupId.Value);
+        if (filterType.HasValue) cases = cases.Where(c => c.Type == filterType.Value);
+        if (filterCategoryId.HasValue) cases = cases.Where(c => c.CategoryId == filterCategoryId.Value);
+        if (filterStatus.HasValue) cases = cases.Where(c => c.Status == filterStatus.Value);
+        if (filterGroupId.HasValue) cases = cases.Where(c => c.AssignedGroupId == filterGroupId.Value);
+        // Filtro por fecha de registro del caso (CreatedAtUtc), en la zona horaria local.
+        if (dateFrom.HasValue) cases = cases.Where(c => DateOnly.FromDateTime(c.CreatedAtUtc.ToLocalTime()) >= dateFrom.Value);
+        if (dateTo.HasValue) cases = cases.Where(c => DateOnly.FromDateTime(c.CreatedAtUtc.ToLocalTime()) <= dateTo.Value);
 
-        var items = cases.Select(c => CasesSharedMapper.ToListItem(c, _catalogService)).ToList();
+        var items = cases.Select(c => CasesSharedMapper.ToListItem(c, _catalogService)).AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            items = items.Where(c =>
+                c.Number.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.ClientName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.BranchName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.Description.Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var itemList = items.ToList();
 
         var vm = new InternalInboxViewModel
         {
-            AllCases = items,
-            GroupedByType = groupByType
-                ? items.GroupBy(i => i.Type.ToDisplayName()).OrderBy(g => g.Key).ToList()
-                : new List<IGrouping<string, CaseListItemViewModel>>(),
+            Q = q,
             Categories = _catalogService.GetCategories().Select(c => new CategoryOption { Id = c.Id, Name = c.Name }).ToList(),
             ResolverGroups = _catalogService.GetResolverGroups(countryId: user.CountryId).Select(g => new ResolverGroupOption { Id = g.Id, Name = g.Name }).ToList(),
-            FilterType = type,
-            FilterCategoryId = categoryId,
-            FilterStatus = status,
-            FilterGroupId = groupId,
+            FilterType = filterType,
+            FilterCategoryId = filterCategoryId,
+            FilterStatus = filterStatus,
+            FilterGroupId = filterGroupId,
+            DateFrom = dateFrom,
+            DateTo = dateTo,
             GroupByType = groupByType
         };
+
+        if (groupByType)
+        {
+            // La vista agrupada es un reporte de todo lo que matchea el filtro: no pagina.
+            vm.AllCases = itemList;
+            vm.GroupedByType = itemList.GroupBy(i => i.Type.ToDisplayName()).OrderBy(g => g.Key).ToList();
+        }
+        else
+        {
+            vm.Paging = itemList.ToPagedResult(page, pageSize);
+            vm.AllCases = vm.Paging.Items;
+        }
 
         return View(vm);
     }
@@ -117,6 +139,44 @@ public class InternalCasesController : GestionCasosControllerBase
             ? "Caso marcado como Resuelto. Se derivó a Mesa de Ayuda para confirmar el mensaje al cliente."
             : "Se actualizó el estado del caso.";
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult BulkChangeStatus(List<int>? caseIds, CaseStatus newStatus, string? resolutionComment, string? returnUrl)
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        IActionResult BackToInbox() => Url.IsLocalUrl(returnUrl) ? Redirect(returnUrl!) : RedirectToAction(nameof(Index));
+
+        if (caseIds == null || caseIds.Count == 0)
+        {
+            TempData["Error"] = "Seleccioná al menos un caso.";
+            return BackToInbox();
+        }
+
+        if (newStatus == CaseStatus.Resuelto && string.IsNullOrWhiteSpace(resolutionComment))
+        {
+            TempData["Error"] = "Para marcar los casos como Resuelto tenés que agregar un comentario con el detalle de la resolución.";
+            return BackToInbox();
+        }
+
+        var user = CurrentUser!;
+        // Sólo se actualizan los casos que están dentro del alcance del usuario (mismo país / sucursales asignadas),
+        // aunque el formulario haya llegado con otros ids (por ejemplo, manipulados a mano).
+        var allowedIds = _caseService.GetCasesForInternalUser(user).Select(c => c.Id).ToHashSet();
+        var idsToUpdate = caseIds.Where(allowedIds.Contains).Distinct().ToList();
+
+        foreach (var id in idsToUpdate)
+        {
+            _caseService.ChangeStatus(id, newStatus, user.Id, resolutionComment);
+        }
+
+        TempData["Success"] = idsToUpdate.Count == 1
+            ? $"Se actualizó 1 caso a estado {newStatus.ToDisplayName()}."
+            : $"Se actualizaron {idsToUpdate.Count} casos a estado {newStatus.ToDisplayName()}.";
+        return BackToInbox();
     }
 
     [HttpPost]

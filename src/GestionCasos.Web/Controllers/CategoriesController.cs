@@ -15,12 +15,19 @@ public class CategoriesController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index()
+    public IActionResult Index(string? q, int? page, int? pageSize)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        return View(_catalogService.GetCategories());
+        var categories = _catalogService.GetCategories().AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            categories = categories.Where(c => c.Name.Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var vm = new CategoryListViewModel { Q = q, Paging = categories.ToPagedResult(page, pageSize) };
+        return View(vm);
     }
 
     [HttpPost]

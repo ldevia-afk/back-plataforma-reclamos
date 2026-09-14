@@ -1,0 +1,80 @@
+@using Microsoft.AspNetCore.WebUtilities
+@model IPagedResult
+@{
+    var query = Context.Request.Query
+        .Where(q => !q.Key.Equals("page", StringComparison.OrdinalIgnoreCase))
+        .ToDictionary(q => q.Key, q => (string?)q.Value.ToString());
+
+    string PageHref(int p)
+    {
+        var withPage = new Dictionary<string, string?>(query) { ["page"] = p.ToString() };
+        return QueryHelpers.AddQueryString(Context.Request.Path, withPage);
+    }
+
+    string PageSizeHref(int size)
+    {
+        var withSize = new Dictionary<string, string?>(query) { ["pageSize"] = size.ToString(), ["page"] = "1" };
+        return QueryHelpers.AddQueryString(Context.Request.Path, withSize);
+    }
+
+    var from = Model.TotalCount == 0 ? 0 : (Model.Page - 1) * Model.PageSize + 1;
+    var to = Math.Min(Model.Page * Model.PageSize, Model.TotalCount);
+
+    // Ventana de números de página alrededor de la actual, con el primero y el último siempre visibles.
+    var pagesToShow = new SortedSet<int> { 1, Model.TotalPages };
+    for (var p = Model.Page - 2; p <= Model.Page + 2; p++)
+    {
+        if (p >= 1 && p <= Model.TotalPages) pagesToShow.Add(p);
+    }
+}
+<div class="gc-pagination">
+    <span class="gc-hint">
+        @if (Model.TotalCount == 0)
+        {
+            <text>Sin resultados</text>
+        }
+        else
+        {
+            <text>Mostrando @from–@to de @Model.TotalCount</text>
+        }
+    </span>
+
+    <label class="gc-hint" style="display:flex;align-items:center;gap:6px;">
+        Por página:
+        <select class="gc-select" style="width:auto;padding:4px 6px;" onchange="location.href=this.value">
+            @foreach (var size in Paging.AllowedPageSizes)
+            {
+                <option value="@PageSizeHref(size)" selected="@(size == Model.PageSize ? "selected" : null)">@size</option>
+            }
+        </select>
+    </label>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="gc-pagination-links">
+            <a class="gc-pagination-link @(Model.Page <= 1 ? "gc-pagination-disabled" : "")"
+               href="@(Model.Page > 1 ? PageHref(Model.Page - 1) : "#")">&larr; Anterior</a>
+
+            @{ var previous = 0; }
+            @foreach (var p in pagesToShow)
+            {
+                if (previous != 0 && p != previous + 1)
+                {
+                    <span class="gc-pagination-ellipsis">…</span>
+                }
+                if (p == Model.Page)
+                {
+                    <span class="gc-pagination-link gc-pagination-current">@p</span>
+                }
+                else
+                {
+                    <a class="gc-pagination-link" href="@PageHref(p)">@p</a>
+                }
+                previous = p;
+            }
+
+            <a class="gc-pagination-link @(Model.Page >= Model.TotalPages ? "gc-pagination-disabled" : "")"
+               href="@(Model.Page < Model.TotalPages ? PageHref(Model.Page + 1) : "#")">Siguiente &rarr;</a>
+        </div>
+    }
+</div>

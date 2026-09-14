@@ -30,6 +30,27 @@ public class CategoryFormViewModel
     public string Name { get; set; } = string.Empty;
 }
 
+public class CategoryListViewModel
+{
+    public string? Q { get; set; }
+    public PagedResult<Category> Paging { get; set; } = new();
+}
+
+public class ResolverGroupListItemViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string CountryName { get; set; } = string.Empty;
+    public bool IsHelpDesk { get; set; }
+    public int MemberCount { get; set; }
+}
+
+public class ResolverGroupListViewModel
+{
+    public string? Q { get; set; }
+    public PagedResult<ResolverGroupListItemViewModel> Paging { get; set; } = new();
+}
+
 public class ClientFormViewModel
 {
     public int Id { get; set; }
@@ -62,6 +83,27 @@ public class BranchListItemViewModel
     public string ClientName { get; set; } = string.Empty;
     public string ClientCode { get; set; } = string.Empty;
     public string CountryName { get; set; } = string.Empty;
+}
+
+public class BranchListViewModel
+{
+    public string? Q { get; set; }
+    public PagedResult<BranchListItemViewModel> Paging { get; set; } = new();
+}
+
+public class ClientListItemViewModel
+{
+    public int Id { get; set; }
+    public string ExternalCode { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string CountryName { get; set; } = string.Empty;
+    public int BranchCount { get; set; }
+}
+
+public class ClientListViewModel
+{
+    public string? Q { get; set; }
+    public PagedResult<ClientListItemViewModel> Paging { get; set; } = new();
 }
 
 public class ClientImportResultViewModel
@@ -104,6 +146,25 @@ public class UserFormViewModel
     public List<Client> AvailableClients { get; set; } = new();
     public List<Branch> AvailableBranches { get; set; } = new();
     public List<ResolverGroup> AvailableResolverGroups { get; set; } = new();
+}
+
+public class UserListItemViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public UserProfileType ProfileType { get; set; }
+    public string ProfileDisplay => ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno";
+    public string CountryName { get; set; } = string.Empty;
+    public string ScopeDisplay { get; set; } = string.Empty;
+    public string GroupNames { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+}
+
+public class UserListViewModel
+{
+    public string? Q { get; set; }
+    public PagedResult<UserListItemViewModel> Paging { get; set; } = new();
 }
 
 public class SwitchUserViewModel

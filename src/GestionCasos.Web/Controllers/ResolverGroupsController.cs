@@ -15,13 +15,32 @@ public class ResolverGroupsController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index()
+    public IActionResult Index(string? q, int? page, int? pageSize)
     {
         var guard = RequireProfile(UserProfileType.Interno);
         if (guard != null) return guard;
 
-        ViewBag.CountryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
-        return View(_catalogService.GetResolverGroups());
+        var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
+        var items = _catalogService.GetResolverGroups()
+            .Select(g => new ResolverGroupListItemViewModel
+            {
+                Id = g.Id,
+                Name = g.Name,
+                CountryName = countryNames.TryGetValue(g.CountryId, out var cn) ? cn : string.Empty,
+                IsHelpDesk = g.IsHelpDesk,
+                MemberCount = g.MemberUserIds.Count
+            })
+            .AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            items = items.Where(g =>
+                g.Name.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                g.CountryName.Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var vm = new ResolverGroupListViewModel { Q = q, Paging = items.ToPagedResult(page, pageSize) };
+        return View(vm);
     }
 
     public IActionResult Create()

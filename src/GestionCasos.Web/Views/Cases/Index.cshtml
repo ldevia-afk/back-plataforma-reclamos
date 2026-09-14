@@ -1,4 +1,4 @@
-@model List<CaseListItemViewModel>
+@model ClientCaseListViewModel
 @{
     ViewData["Title"] = "Mis casos";
 }
@@ -6,10 +6,28 @@
 
 <a class="gc-btn" asp-controller="Cases" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nueva solicitud / consulta / reclamo</a>
 
+<form method="get" class="gc-filters gc-card">
+    <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
+    <div class="gc-form-group">
+        <label class="gc-label">Buscar</label>
+        <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Número, sucursal, tipo o detalle..."
+               data-debounce-submit="400" />
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Registrado desde</label>
+        <input asp-for="DateFrom" class="gc-input" onchange="this.form.submit()" />
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Registrado hasta</label>
+        <input asp-for="DateTo" class="gc-input" onchange="this.form.submit()" />
+    </div>
+    <noscript><button type="submit" class="gc-btn">Filtrar</button></noscript>
+</form>
+
 <div class="gc-card">
-    @if (Model.Count == 0)
+    @if (Model.Paging.TotalCount == 0)
     {
-        <p class="gc-hint">Todavía no registraste ningún caso.</p>
+        <p class="gc-hint">Ningún caso coincide con el filtro.</p>
     }
     else
     {
@@ -26,7 +44,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model)
+                @foreach (var item in Model.Paging.Items)
                 {
                     <tr>
                         <td>@item.Number</td>
@@ -41,4 +59,5 @@
             </tbody>
         </table>
     }
+    @await Html.PartialAsync("_Pagination", Model.Paging)
 </div>

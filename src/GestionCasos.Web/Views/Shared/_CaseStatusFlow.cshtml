@@ -1,0 +1,15 @@
+@model CaseStatus
+@{
+    // Orden fijo del flujo (independiente del valor numérico del enum, por si se reordena a futuro).
+    var flow = new[] { CaseStatus.Inicial, CaseStatus.Asignado, CaseStatus.EnAnalisis, CaseStatus.Resuelto, CaseStatus.Cerrado };
+    var currentIndex = Array.IndexOf(flow, Model);
+}
+<div class="gc-status-flow">
+    @for (var i = 0; i < flow.Length; i++)
+    {
+        var cssClass = i < currentIndex ? "gc-status-flow-step-done"
+            : i == currentIndex ? "gc-status-flow-step-current"
+            : "gc-status-flow-step-future";
+        <div class="gc-status-flow-step @cssClass">@flow[i].ToDisplayName()</div>
+    }
+</div>

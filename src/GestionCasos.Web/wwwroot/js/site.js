@@ -40,24 +40,30 @@
         });
     }
 
-    // --- Buscador en vivo genérico: <input data-live-search-for="idDeLaTabla"> filtra
-    // las filas <tr data-search="..."> de esa tabla a medida que se escribe. ---
-    document.querySelectorAll("[data-live-search-for]").forEach(function (input) {
-        var table = document.getElementById(input.getAttribute("data-live-search-for"));
+    // --- "Seleccionar todos" por tabla: un checkbox en el header tilda/destilda
+    // todos los checkboxes de esa misma tabla (clase gc-case-checkbox). ---
+    document.querySelectorAll(".gc-select-all-in-table").forEach(function (headerCb) {
+        var table = headerCb.closest("table");
         if (!table) return;
-        var rows = table.querySelectorAll("tbody tr[data-search]");
-        var noResultsId = input.getAttribute("data-no-results-for");
-        var noResults = noResultsId ? document.getElementById(noResultsId) : null;
-
-        input.addEventListener("input", function () {
-            var query = input.value.trim().toLowerCase();
-            var visibleCount = 0;
-            rows.forEach(function (row) {
-                var match = row.getAttribute("data-search").indexOf(query) !== -1;
-                row.hidden = !match;
-                if (match) visibleCount++;
+        headerCb.addEventListener("change", function () {
+            table.querySelectorAll(".gc-case-checkbox").forEach(function (cb) {
+                cb.checked = headerCb.checked;
             });
-            if (noResults) noResults.hidden = visibleCount !== 0;
+        });
+    });
+
+    // --- Filtro remoto con debounce: <input data-debounce-submit="400"> envía su
+    // formulario (GET) solo, sin apretar ningún botón, cuando la persona deja de
+    // escribir. Como es un submit real, el filtrado y el paginado los resuelve el
+    // servidor (no se trae toda la tabla al navegador para filtrarla ahí). ---
+    document.querySelectorAll("[data-debounce-submit]").forEach(function (input) {
+        var delay = parseInt(input.getAttribute("data-debounce-submit"), 10) || 400;
+        var timer = null;
+        input.addEventListener("input", function () {
+            clearTimeout(timer);
+            timer = setTimeout(function () {
+                if (input.form) input.form.submit();
+            }, delay);
         });
     });
 })();

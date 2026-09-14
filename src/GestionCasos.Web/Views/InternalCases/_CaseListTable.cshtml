@@ -2,6 +2,7 @@
 <table class="gc-table">
     <thead>
         <tr>
+            <th><input type="checkbox" class="gc-select-all-in-table" title="Seleccionar todos" /></th>
             <th>Número</th>
             <th>Cliente</th>
             <th>Sucursal</th>
@@ -17,6 +18,7 @@
         @foreach (var item in Model)
         {
             <tr>
+                <td><input type="checkbox" name="caseIds" value="@item.Id" class="gc-case-checkbox" /></td>
                 <td>@item.Number</td>
                 <td>@item.ClientName</td>
                 <td>@item.BranchName</td>

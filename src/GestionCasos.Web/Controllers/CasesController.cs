@@ -18,15 +18,40 @@ public class CasesController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index()
+    public IActionResult Index(string? q, DateOnly? dateFrom, DateOnly? dateTo, int? page, int? pageSize)
     {
         var guard = RequireProfile(UserProfileType.Cliente);
         if (guard != null) return guard;
 
         var user = CurrentUser!;
-        var cases = _caseService.GetCasesForClientUser(user);
-        var items = cases.Select(ToListItem).ToList();
-        return View(items);
+        var items = _caseService.GetCasesForClientUser(user).Select(ToListItem).AsEnumerable();
+
+        // Filtro por fecha de registro del caso (CreatedAtUtc), en la zona horaria local.
+        if (dateFrom.HasValue)
+        {
+            items = items.Where(c => DateOnly.FromDateTime(c.CreatedAtUtc.ToLocalTime()) >= dateFrom.Value);
+        }
+        if (dateTo.HasValue)
+        {
+            items = items.Where(c => DateOnly.FromDateTime(c.CreatedAtUtc.ToLocalTime()) <= dateTo.Value);
+        }
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            items = items.Where(c =>
+                c.Number.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.BranchName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.Type.ToDisplayName().Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                c.Description.Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var vm = new ClientCaseListViewModel
+        {
+            Q = q,
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            Paging = items.ToPagedResult(page, pageSize)
+        };
+        return View(vm);
     }
 
     [HttpGet]

@@ -1,28 +1,23 @@
-@model List<BranchListItemViewModel>
+@model BranchListViewModel
 @{
     ViewData["Title"] = "Sucursales";
 }
 <a asp-controller="Clients" asp-action="Index">&larr; Volver a Clientes y sucursales</a>
 <h1>Sucursales</h1>
 
-<div class="gc-form-group" style="max-width:360px;">
-    <input class="gc-input" type="search" placeholder="Buscar por sucursal, cliente, dirección, país o estado..."
-           data-live-search-for="branches-table" data-no-results-for="branches-no-results" />
-</div>
+<form method="get" class="gc-form-group" style="max-width:360px;">
+    <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
+    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por sucursal, cliente, dirección, país o estado..."
+           data-debounce-submit="400" />
+</form>
 
 <div class="gc-card">
-    <table class="gc-table" id="branches-table">
+    <table class="gc-table">
         <thead><tr><th>Sucursal</th><th>Cliente</th><th>País</th><th>Dirección</th><th>Estado</th><th></th></tr></thead>
         <tbody>
-            @foreach (var branch in Model)
+            @foreach (var branch in Model.Paging.Items)
             {
-                var statusDisplay = branch.IsActive ? "Activa" : "Inactiva";
-                var searchText = string.Join(" ", new[]
-                {
-                    branch.Name, branch.ClientName, branch.ClientCode, branch.CountryName, branch.Address, statusDisplay
-                }).ToLowerInvariant();
-
-                <tr data-search="@searchText">
+                <tr>
                     <td>@branch.Name</td>
                     <td>
                         <a asp-controller="Clients" asp-action="Edit" asp-route-id="@branch.ClientId">@branch.ClientName</a>
@@ -33,15 +28,15 @@
                     </td>
                     <td>@branch.CountryName</td>
                     <td>@(string.IsNullOrWhiteSpace(branch.Address) ? "-" : branch.Address)</td>
-                    <td><span class="gc-status @(branch.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@statusDisplay</span></td>
+                    <td><span class="gc-status @(branch.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@(branch.IsActive ? "Activa" : "Inactiva")</span></td>
                     <td><a asp-controller="Clients" asp-action="Edit" asp-route-id="@branch.ClientId">Gestionar</a></td>
                 </tr>
             }
-            @if (Model.Count == 0)
+            @if (Model.Paging.Items.Count == 0)
             {
-                <tr><td colspan="6" class="gc-hint">Todavía no hay sucursales cargadas.</td></tr>
+                <tr><td colspan="6" class="gc-hint">Ninguna sucursal coincide con la búsqueda.</td></tr>
             }
         </tbody>
     </table>
-    <p id="branches-no-results" class="gc-hint" hidden>Ninguna sucursal coincide con la búsqueda.</p>
+    @await Html.PartialAsync("_Pagination", Model.Paging)
 </div>

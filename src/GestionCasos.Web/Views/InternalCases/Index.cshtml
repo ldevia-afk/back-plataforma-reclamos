@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Http.Extensions
 @model InternalInboxViewModel
 @{
     ViewData["Title"] = "Bandeja de casos";
@@ -5,6 +6,12 @@
 <h1>Bandeja de casos</h1>
 
 <form method="get" class="gc-filters gc-card">
+    <input type="hidden" name="pageSize" value="@(Model.Paging?.PageSize ?? Paging.DefaultPageSize)" />
+    <div class="gc-form-group">
+        <label class="gc-label">Buscar</label>
+        <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Número, cliente, sucursal o detalle..."
+               data-debounce-submit="400" />
+    </div>
     <div class="gc-form-group">
         <label class="gc-label">Tipo</label>
         <select asp-for="FilterType" class="gc-select" asp-items="Html.GetEnumSelectList<CaseType>()" onchange="this.form.submit()">
@@ -30,32 +37,142 @@
         </select>
     </div>
     <div class="gc-form-group">
+        <label class="gc-label">Registrado desde</label>
+        <input asp-for="DateFrom" class="gc-input" onchange="this.form.submit()" />
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Registrado hasta</label>
+        <input asp-for="DateTo" class="gc-input" onchange="this.form.submit()" />
+    </div>
+    <div class="gc-form-group">
         <label class="gc-label">Vista</label>
         <select name="groupByType" class="gc-select" onchange="this.form.submit()">
             <option value="true" selected="@(Model.GroupByType ? "selected" : null)">Agrupada por tipo</option>
-            <option value="false" selected="@(!Model.GroupByType ? "selected" : null)">Lista simple</option>
+            <option value="false" selected="@(!Model.GroupByType ? "selected" : null)">Lista simple (con paginado)</option>
         </select>
     </div>
     <noscript><button type="submit" class="gc-btn">Filtrar</button></noscript>
 </form>
 
-@if (Model.AllCases.Count == 0)
-{
-    <div class="gc-card"><p class="gc-hint">No hay casos que coincidan con el filtro.</p></div>
-}
-else if (Model.GroupByType)
-{
-    foreach (var group in Model.GroupedByType)
+<form id="bulk-form" asp-controller="InternalCases" asp-action="BulkChangeStatus" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="returnUrl" value="@Context.Request.GetEncodedPathAndQuery()" />
+    <input type="hidden" name="resolutionComment" id="bulk-resolution-comment" />
+
+    @if (Model.AllCases.Count == 0)
     {
-        <div class="gc-category-block">
-            <div class="gc-category-heading">@group.Key (@group.Count())</div>
-            @await Html.PartialAsync("_CaseListTable", group.ToList())
-        </div>
+        <div class="gc-card"><p class="gc-hint">No hay casos que coincidan con el filtro.</p></div>
     }
-}
-else
-{
-    <div class="gc-card">
-        @await Html.PartialAsync("_CaseListTable", Model.AllCases)
+    else
+    {
+        <div class="gc-bulk-toolbar">
+            <select id="bulk-status-select" class="gc-select" style="width:auto;">
+                @foreach (var status in Enum.GetValues<CaseStatus>())
+                {
+                    <option value="@((int)status)">@status.ToDisplayName()</option>
+                }
+            </select>
+            <button type="button" id="bulk-update-btn" class="gc-btn gc-btn-secondary">Actualizar seleccionados</button>
+            <span class="gc-hint">Marcá los casos en la tabla y elegí a qué estado pasarlos.</span>
+        </div>
+
+        if (Model.GroupByType)
+        {
+            <p class="gc-hint">Vista agrupada: muestra todo lo que matchea el filtro, sin paginar. Para paginar, usá "Lista simple".</p>
+            foreach (var group in Model.GroupedByType)
+            {
+                <div class="gc-category-block">
+                    <div class="gc-category-heading">@group.Key (@group.Count())</div>
+                    @await Html.PartialAsync("_CaseListTable", group.ToList())
+                </div>
+            }
+        }
+        else
+        {
+            <div class="gc-card">
+                @await Html.PartialAsync("_CaseListTable", Model.AllCases)
+                @if (Model.Paging != null)
+                {
+                    @await Html.PartialAsync("_Pagination", Model.Paging)
+                }
+            </div>
+        }
+    }
+</form>
+
+<div id="bulk-confirm-modal" class="gc-modal-overlay" hidden>
+    <div class="gc-modal">
+        <div class="gc-modal-title">Confirmar actualización masiva</div>
+        <p>Vas a actualizar <strong id="bulk-confirm-count">0</strong> caso(s) a estado <strong id="bulk-confirm-status"></strong>.</p>
+        <div class="gc-form-group" id="bulk-comment-group" hidden>
+            <label class="gc-label">Comentario de resolución (obligatorio)</label>
+            <p class="gc-hint" style="margin-top:0;">Se va a usar como comentario de resolución en cada uno de los casos seleccionados.</p>
+            <textarea id="bulk-comment-input" class="gc-input" rows="3"></textarea>
+        </div>
+        <div class="gc-modal-actions">
+            <button type="button" id="bulk-cancel-btn" class="gc-btn gc-btn-secondary">Cancelar</button>
+            <button type="button" id="bulk-confirm-btn" class="gc-btn">Confirmar</button>
+        </div>
     </div>
-}
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var RESUELTO_VALUE = "@((int)CaseStatus.Resuelto)";
+
+        var updateBtn = document.getElementById("bulk-update-btn");
+        var statusSelect = document.getElementById("bulk-status-select");
+        var modal = document.getElementById("bulk-confirm-modal");
+        var countEl = document.getElementById("bulk-confirm-count");
+        var statusEl = document.getElementById("bulk-confirm-status");
+        var commentGroup = document.getElementById("bulk-comment-group");
+        var commentInput = document.getElementById("bulk-comment-input");
+        var hiddenComment = document.getElementById("bulk-resolution-comment");
+        var form = document.getElementById("bulk-form");
+
+        if (!updateBtn) return;
+
+        function selectedCheckboxes() {
+            return Array.from(document.querySelectorAll(".gc-case-checkbox:checked"));
+        }
+
+        updateBtn.addEventListener("click", function () {
+            var checked = selectedCheckboxes();
+            if (checked.length === 0) {
+                alert("Seleccioná al menos un caso.");
+                return;
+            }
+
+            countEl.textContent = checked.length;
+            statusEl.textContent = statusSelect.options[statusSelect.selectedIndex].text;
+            var isResuelto = statusSelect.value === RESUELTO_VALUE;
+            commentGroup.hidden = !isResuelto;
+            commentInput.value = "";
+            modal.hidden = false;
+        });
+
+        document.getElementById("bulk-cancel-btn").addEventListener("click", function () {
+            modal.hidden = true;
+        });
+
+        document.getElementById("bulk-confirm-btn").addEventListener("click", function () {
+            var isResuelto = statusSelect.value === RESUELTO_VALUE;
+            if (isResuelto && !commentInput.value.trim()) {
+                alert("Ingresá el comentario de resolución.");
+                return;
+            }
+
+            hiddenComment.value = commentInput.value;
+
+            // El <select> de estado vive fuera del <form> (en la barra de herramientas),
+            // así que agregamos su valor como campo oculto antes de enviar.
+            var statusField = document.createElement("input");
+            statusField.type = "hidden";
+            statusField.name = "newStatus";
+            statusField.value = statusSelect.value;
+            form.appendChild(statusField);
+
+            form.submit();
+        });
+    });
+</script>
