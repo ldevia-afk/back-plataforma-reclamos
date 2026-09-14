@@ -1,0 +1,66 @@
+@model ClientImportResultViewModel
+@{
+    ViewData["Title"] = "Importar clientes y sucursales";
+}
+<a asp-controller="Clients" asp-action="Index">&larr; Volver a Clientes y sucursales</a>
+<h1>Importar clientes y sucursales desde Excel</h1>
+
+<div class="gc-card">
+    <p>
+        El archivo debe tener una hoja <strong>Clientes</strong> (columnas: Código, Nombre, País) y/o una hoja
+        <strong>Sucursales</strong> (columnas: Código Cliente, Nombre, Dirección). El código de cliente es el que
+        permite asociar cada sucursal a su cliente sin depender de ningún id interno.
+    </p>
+    <p class="gc-hint">
+        Si el código ya existe, se actualiza ese cliente (o esa sucursal, por nombre) en vez de duplicarlo — podés
+        volver a importar el mismo archivo para corregir datos.
+    </p>
+    <a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="DownloadTemplate">Descargar plantilla</a>
+
+    <form asp-controller="Clients" asp-action="Import" method="post" enctype="multipart/form-data" style="margin-top:16px;">
+        @Html.AntiForgeryToken()
+        <div class="gc-form-group">
+            <label class="gc-label">Archivo Excel (.xlsx)</label>
+            <input type="file" name="file" accept=".xlsx" class="gc-input" required />
+        </div>
+        <button type="submit" class="gc-btn">Importar</button>
+    </form>
+</div>
+
+@if (Model.HasRun)
+{
+    <div class="gc-card">
+        <div class="gc-card-title">Resultado de la importación</div>
+        <div class="gc-metric-grid">
+            <div class="gc-metric-card">
+                <div class="gc-metric-value">@Model.ClientsCreated</div>
+                <div class="gc-metric-label">Clientes creados</div>
+            </div>
+            <div class="gc-metric-card">
+                <div class="gc-metric-value">@Model.ClientsUpdated</div>
+                <div class="gc-metric-label">Clientes actualizados</div>
+            </div>
+            <div class="gc-metric-card">
+                <div class="gc-metric-value">@Model.BranchesCreated</div>
+                <div class="gc-metric-label">Sucursales creadas</div>
+            </div>
+            <div class="gc-metric-card">
+                <div class="gc-metric-value">@Model.BranchesUpdated</div>
+                <div class="gc-metric-label">Sucursales actualizadas</div>
+            </div>
+        </div>
+
+        @if (Model.Errors.Count > 0)
+        {
+            <div class="validation-summary-errors">
+                <strong>Filas con problemas (no se importaron):</strong>
+                <ul>
+                    @foreach (var error in Model.Errors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+}

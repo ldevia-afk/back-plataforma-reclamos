@@ -11,6 +11,13 @@
         <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
 
         <div class="gc-form-group">
+            <label class="gc-label">Código identificador</label>
+            <input asp-for="ExternalCode" class="gc-input" placeholder="Ej: 1001" />
+            <p class="gc-hint">Se usa para asociar sucursales a este cliente al importar desde Excel.</p>
+            <span asp-validation-for="ExternalCode" class="field-validation-error"></span>
+        </div>
+
+        <div class="gc-form-group">
             <label class="gc-label">Nombre</label>
             <input asp-for="Name" class="gc-input" />
             <span asp-validation-for="Name" class="field-validation-error"></span>

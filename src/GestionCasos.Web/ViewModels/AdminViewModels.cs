@@ -34,6 +34,10 @@ public class ClientFormViewModel
 {
     public int Id { get; set; }
 
+    [Required(ErrorMessage = "Ingresá un código identificador.")]
+    [StringLength(30)]
+    public string ExternalCode { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "Ingresá un nombre.")]
     [StringLength(150)]
     public string Name { get; set; } = string.Empty;
@@ -46,6 +50,16 @@ public class ClientFormViewModel
 
     [StringLength(120)]
     public string? NewBranchName { get; set; }
+}
+
+public class ClientImportResultViewModel
+{
+    public bool HasRun { get; set; }
+    public int ClientsCreated { get; set; }
+    public int ClientsUpdated { get; set; }
+    public int BranchesCreated { get; set; }
+    public int BranchesUpdated { get; set; }
+    public List<string> Errors { get; set; } = new();
 }
 
 public class UserFormViewModel

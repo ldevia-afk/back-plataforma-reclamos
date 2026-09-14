@@ -59,10 +59,10 @@ public class InMemoryDataStore
         Categories.AddRange(new[] { catSinMovimientoCliente, catInsumosNoEnviados, catFallaTecnica });
 
         // --- Clientes ---
-        var lider = new Client { Id = _nextClientId++, Name = "Supermercados Líder", CountryId = chileId };
-        var bancoChile = new Client { Id = _nextClientId++, Name = "Banco de Chile", CountryId = chileId };
-        var farmacity = new Client { Id = _nextClientId++, Name = "Farmacity", CountryId = argentinaId };
-        var bancoGalicia = new Client { Id = _nextClientId++, Name = "Banco Galicia", CountryId = argentinaId };
+        var lider = new Client { Id = _nextClientId++, Name = "Supermercados Líder", CountryId = chileId, ExternalCode = "1001" };
+        var bancoChile = new Client { Id = _nextClientId++, Name = "Banco de Chile", CountryId = chileId, ExternalCode = "1002" };
+        var farmacity = new Client { Id = _nextClientId++, Name = "Farmacity", CountryId = argentinaId, ExternalCode = "2001" };
+        var bancoGalicia = new Client { Id = _nextClientId++, Name = "Banco Galicia", CountryId = argentinaId, ExternalCode = "2002" };
         Clients.AddRange(new[] { lider, bancoChile, farmacity, bancoGalicia });
 
         // --- Sucursales ---

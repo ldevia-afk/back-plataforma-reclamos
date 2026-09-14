@@ -37,17 +37,35 @@ public class CatalogService : ICatalogService
         lock (_store.Lock) return _store.Clients.FirstOrDefault(c => c.Id == id);
     }
 
-    public Client CreateClient(string name, int countryId)
+    public Client? GetClientByExternalCode(string externalCode)
     {
         lock (_store.Lock)
         {
-            var client = new Client { Id = _store.NextClientId(), Name = name, CountryId = countryId };
+            return _store.Clients.FirstOrDefault(c => c.ExternalCode.Equals(externalCode, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    public bool IsExternalCodeAvailable(string externalCode, int? excludeClientId = null)
+    {
+        lock (_store.Lock)
+        {
+            return !_store.Clients.Any(c =>
+                c.Id != excludeClientId &&
+                c.ExternalCode.Equals(externalCode, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    public Client CreateClient(string name, int countryId, string externalCode)
+    {
+        lock (_store.Lock)
+        {
+            var client = new Client { Id = _store.NextClientId(), Name = name, CountryId = countryId, ExternalCode = externalCode };
             _store.Clients.Add(client);
             return client;
         }
     }
 
-    public void UpdateClient(int id, string name, int countryId)
+    public void UpdateClient(int id, string name, int countryId, string externalCode)
     {
         lock (_store.Lock)
         {
@@ -55,6 +73,7 @@ public class CatalogService : ICatalogService
             if (client == null) return;
             client.Name = name;
             client.CountryId = countryId;
+            client.ExternalCode = externalCode;
             foreach (var branch in _store.Branches.Where(b => b.ClientId == id))
             {
                 branch.CountryId = countryId;

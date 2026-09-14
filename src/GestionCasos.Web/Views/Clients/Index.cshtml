@@ -5,14 +5,16 @@
 <h1>Clientes y sucursales</h1>
 
 <a class="gc-btn" asp-controller="Clients" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo cliente</a>
+<a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Import" style="margin-bottom:16px;display:inline-block;">Importar desde Excel</a>
 
 <div class="gc-card">
     <table class="gc-table">
-        <thead><tr><th>Nombre</th><th>País</th><th>Sucursales</th><th></th></tr></thead>
+        <thead><tr><th>Código</th><th>Nombre</th><th>País</th><th>Sucursales</th><th></th></tr></thead>
         <tbody>
             @foreach (var client in Model)
             {
                 <tr>
+                    <td>@client.ExternalCode</td>
                     <td>@client.Name</td>
                     <td>@ViewBag.CountryNames[client.CountryId]</td>
                     <td>@ViewBag.BranchCounts[client.Id]</td>

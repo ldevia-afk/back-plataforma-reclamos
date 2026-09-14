@@ -9,8 +9,11 @@ public interface ICatalogService
 
     List<Client> GetClients(int? countryId = null);
     Client? GetClient(int id);
-    Client CreateClient(string name, int countryId);
-    void UpdateClient(int id, string name, int countryId);
+    Client? GetClientByExternalCode(string externalCode);
+    /// <summary>True si nadie más (salvo <paramref name="excludeClientId"/>) usa ese código.</summary>
+    bool IsExternalCodeAvailable(string externalCode, int? excludeClientId = null);
+    Client CreateClient(string name, int countryId, string externalCode);
+    void UpdateClient(int id, string name, int countryId, string externalCode);
     void DeleteClient(int id);
 
     /// <summary>Por defecto sólo devuelve sucursales activas; <paramref name="includeInactive"/> trae también las dadas de baja.</summary>
