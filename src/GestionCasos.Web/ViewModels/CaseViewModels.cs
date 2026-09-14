@@ -78,6 +78,8 @@ public class CaseDetailViewModel
     public List<CategoryOption> AvailableCategories { get; set; } = new();
 
     public List<CaseHistoryRow> History { get; set; } = new();
+    /// <summary>Emails "enviados" para este caso (simulados: no hay servidor de correo real conectado).</summary>
+    public List<CaseEmailRow> SentEmails { get; set; } = new();
 
     // --- Resolución y confirmación con el cliente ---
     public DateTime? ResolvedAtUtc { get; set; }
@@ -103,6 +105,14 @@ public class UserOption
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+}
+
+public class CaseEmailRow
+{
+    public string ToEmail { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+    public DateTime SentAtUtc { get; set; }
 }
 
 public class CaseHistoryRow

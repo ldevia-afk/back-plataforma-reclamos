@@ -55,4 +55,12 @@ public class EmailService : IEmailService
             return _store.SentEmails.Where(e => e.CaseId == caseId).OrderBy(e => e.SentAtUtc).ToList();
         }
     }
+
+    public List<SentEmail> GetAllEmails()
+    {
+        lock (_store.Lock)
+        {
+            return _store.SentEmails.OrderByDescending(e => e.SentAtUtc).ToList();
+        }
+    }
 }

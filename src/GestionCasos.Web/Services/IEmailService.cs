@@ -12,4 +12,6 @@ public interface IEmailService
 {
     SentEmail SendCaseResolutionEmail(ServiceCase serviceCase, string resolutionMessage);
     List<SentEmail> GetEmailsForCase(int caseId);
+    /// <summary>Todos los emails "enviados" (más nuevo primero), para poder revisarlos como prueba.</summary>
+    List<SentEmail> GetAllEmails();
 }

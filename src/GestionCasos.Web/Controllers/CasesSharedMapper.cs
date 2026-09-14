@@ -31,7 +31,7 @@ public static class CasesSharedMapper
         };
     }
 
-    public static CaseDetailViewModel ToDetailViewModel(ServiceCase c, ICatalogService catalog, bool canManage)
+    public static CaseDetailViewModel ToDetailViewModel(ServiceCase c, ICatalogService catalog, bool canManage, IEmailService emailService)
     {
         var client = catalog.GetClient(c.ClientId);
         var country = catalog.GetCountry(c.CountryId);
@@ -82,6 +82,9 @@ public static class CasesSharedMapper
             History = c.History
                 .OrderBy(h => h.OccurredAtUtc)
                 .Select(h => ToHistoryRow(h, catalog, canManage))
+                .ToList(),
+            SentEmails = emailService.GetEmailsForCase(c.Id)
+                .Select(e => new CaseEmailRow { ToEmail = e.ToEmail, Subject = e.Subject, Body = e.Body, SentAtUtc = e.SentAtUtc })
                 .ToList()
         };
     }

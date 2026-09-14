@@ -1,0 +1,55 @@
+@model SentEmailListViewModel
+@{
+    ViewData["Title"] = "Emails enviados";
+}
+<h1>Emails enviados</h1>
+<p class="gc-hint">
+    Este módulo de prueba no tiene un servidor de correo real conectado: cuando el sistema
+    "envía" un email (por ejemplo, al confirmar la resolución de un caso) lo guarda acá para
+    poder revisar su contenido tal cual se hubiera mandado.
+</p>
+
+<form method="get" class="gc-form-group" style="max-width:360px;">
+    <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
+    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por caso, destinatario o asunto..."
+           data-debounce-submit="400" />
+</form>
+
+<div class="gc-card">
+    @if (Model.Paging.Items.Count == 0)
+    {
+        <p class="gc-hint">Todavía no se envió ningún email.</p>
+    }
+    else
+    {
+        <table class="gc-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Caso</th>
+                    <th>Para</th>
+                    <th>Asunto</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var email in Model.Paging.Items)
+                {
+                    <tr>
+                        <td>@email.SentAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td><a asp-controller="InternalCases" asp-action="Details" asp-route-id="@email.CaseId">@email.CaseNumber</a></td>
+                        <td>@email.ToEmail</td>
+                        <td>@email.Subject</td>
+                        <td>
+                            <details>
+                                <summary>Ver mensaje</summary>
+                                <pre style="white-space:pre-wrap;font-family:inherit;margin:8px 0 0;">@email.Body</pre>
+                            </details>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    @await Html.PartialAsync("_Pagination", Model.Paging)
+</div>

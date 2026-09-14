@@ -68,6 +68,25 @@ else if (Model.Status == CaseStatus.Resuelto && !Model.CanManage)
     </div>
 }
 
+@if (Model.SentEmails.Count > 0)
+{
+    <div class="gc-card">
+        <div class="gc-card-title">Emails enviados</div>
+        <p class="gc-hint" style="margin-top:0;">Este módulo de prueba no tiene un servidor de correo real conectado: acá podés ver el contenido tal cual se hubiera enviado.</p>
+        <ul class="gc-timeline">
+            @foreach (var email in Model.SentEmails.OrderByDescending(e => e.SentAtUtc))
+            {
+                <li>
+                    <details>
+                        <summary><strong>@email.Subject</strong> — para @email.ToEmail — @email.SentAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</summary>
+                        <pre style="white-space:pre-wrap;font-family:inherit;margin:8px 0 0;">@email.Body</pre>
+                    </details>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
 @if (Model.CanManage)
 {
     <div class="gc-card">

@@ -10,12 +10,14 @@ public class InternalCasesController : GestionCasosControllerBase
 {
     private readonly ICaseService _caseService;
     private readonly ICatalogService _catalogService;
+    private readonly IEmailService _emailService;
 
-    public InternalCasesController(ICurrentUserService currentUserService, ICaseService caseService, ICatalogService catalogService)
+    public InternalCasesController(ICurrentUserService currentUserService, ICaseService caseService, ICatalogService catalogService, IEmailService emailService)
         : base(currentUserService)
     {
         _caseService = caseService;
         _catalogService = catalogService;
+        _emailService = emailService;
     }
 
     public IActionResult Index(
@@ -94,7 +96,7 @@ public class InternalCasesController : GestionCasosControllerBase
             return NotFound();
         }
 
-        return View(CasesSharedMapper.ToDetailViewModel(serviceCase, _catalogService, canManage: true));
+        return View(CasesSharedMapper.ToDetailViewModel(serviceCase, _catalogService, canManage: true, _emailService));
     }
 
     [HttpPost]

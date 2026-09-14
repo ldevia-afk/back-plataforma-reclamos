@@ -10,12 +10,14 @@ public class CasesController : GestionCasosControllerBase
 {
     private readonly ICaseService _caseService;
     private readonly ICatalogService _catalogService;
+    private readonly IEmailService _emailService;
 
-    public CasesController(ICurrentUserService currentUserService, ICaseService caseService, ICatalogService catalogService)
+    public CasesController(ICurrentUserService currentUserService, ICaseService caseService, ICatalogService catalogService, IEmailService emailService)
         : base(currentUserService)
     {
         _caseService = caseService;
         _catalogService = catalogService;
+        _emailService = emailService;
     }
 
     public IActionResult Index(string? q, DateOnly? dateFrom, DateOnly? dateTo, int? page, int? pageSize)
@@ -117,7 +119,7 @@ public class CasesController : GestionCasosControllerBase
             return NotFound();
         }
 
-        return View(CasesSharedMapper.ToDetailViewModel(serviceCase, _catalogService, canManage: false));
+        return View(CasesSharedMapper.ToDetailViewModel(serviceCase, _catalogService, canManage: false, _emailService));
     }
 
     private CaseCreateViewModel BuildCreateViewModel(AppUser user)
