@@ -39,4 +39,25 @@
             });
         });
     }
+
+    // --- Buscador en vivo genérico: <input data-live-search-for="idDeLaTabla"> filtra
+    // las filas <tr data-search="..."> de esa tabla a medida que se escribe. ---
+    document.querySelectorAll("[data-live-search-for]").forEach(function (input) {
+        var table = document.getElementById(input.getAttribute("data-live-search-for"));
+        if (!table) return;
+        var rows = table.querySelectorAll("tbody tr[data-search]");
+        var noResultsId = input.getAttribute("data-no-results-for");
+        var noResults = noResultsId ? document.getElementById(noResultsId) : null;
+
+        input.addEventListener("input", function () {
+            var query = input.value.trim().toLowerCase();
+            var visibleCount = 0;
+            rows.forEach(function (row) {
+                var match = row.getAttribute("data-search").indexOf(query) !== -1;
+                row.hidden = !match;
+                if (match) visibleCount++;
+            });
+            if (noResults) noResults.hidden = visibleCount !== 0;
+        });
+    });
 })();

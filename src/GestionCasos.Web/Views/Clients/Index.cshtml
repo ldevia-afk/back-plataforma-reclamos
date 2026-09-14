@@ -5,19 +5,29 @@
 <h1>Clientes y sucursales</h1>
 
 <a class="gc-btn" asp-controller="Clients" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo cliente</a>
+<a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Branches" style="margin-bottom:16px;display:inline-block;">Ver sucursales</a>
 <a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Import" style="margin-bottom:16px;display:inline-block;">Importar desde Excel</a>
 
+<div class="gc-form-group" style="max-width:360px;">
+    <input class="gc-input" type="search" placeholder="Buscar por código, nombre o país..."
+           data-live-search-for="clients-table" data-no-results-for="clients-no-results" />
+</div>
+
 <div class="gc-card">
-    <table class="gc-table">
+    <table class="gc-table" id="clients-table">
         <thead><tr><th>Código</th><th>Nombre</th><th>País</th><th>Sucursales</th><th></th></tr></thead>
         <tbody>
             @foreach (var client in Model)
             {
-                <tr>
+                var countryName = (string)ViewBag.CountryNames[client.CountryId];
+                var branchCount = (int)ViewBag.BranchCounts[client.Id];
+                var searchText = string.Join(" ", new[] { client.ExternalCode, client.Name, countryName }).ToLowerInvariant();
+
+                <tr data-search="@searchText">
                     <td>@client.ExternalCode</td>
                     <td>@client.Name</td>
-                    <td>@ViewBag.CountryNames[client.CountryId]</td>
-                    <td>@ViewBag.BranchCounts[client.Id]</td>
+                    <td>@countryName</td>
+                    <td>@branchCount</td>
                     <td>
                         <a asp-controller="Clients" asp-action="Edit" asp-route-id="@client.Id">Editar / sucursales</a>
                         &nbsp;·&nbsp;
@@ -30,4 +40,5 @@
             }
         </tbody>
     </table>
+    <p id="clients-no-results" class="gc-hint" hidden>Ningún cliente coincide con la búsqueda.</p>
 </div>

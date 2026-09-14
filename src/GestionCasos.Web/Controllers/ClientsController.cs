@@ -27,6 +27,36 @@ public class ClientsController : GestionCasosControllerBase
         return View(clients);
     }
 
+    public IActionResult Branches()
+    {
+        var guard = RequireProfile(UserProfileType.Interno);
+        if (guard != null) return guard;
+
+        var clientsById = _catalogService.GetClients().ToDictionary(c => c.Id);
+        var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
+
+        var items = _catalogService.GetBranches(includeInactive: true)
+            .Select(b =>
+            {
+                clientsById.TryGetValue(b.ClientId, out var client);
+                return new BranchListItemViewModel
+                {
+                    Id = b.Id,
+                    ClientId = b.ClientId,
+                    ClientName = client?.Name ?? "(cliente eliminado)",
+                    ClientCode = client?.ExternalCode ?? string.Empty,
+                    CountryName = countryNames.TryGetValue(b.CountryId, out var cn) ? cn : string.Empty,
+                    Name = b.Name,
+                    Address = b.Address,
+                    IsActive = b.IsActive
+                };
+            })
+            .OrderBy(b => b.ClientName).ThenBy(b => b.Name)
+            .ToList();
+
+        return View(items);
+    }
+
     public IActionResult Create()
     {
         var guard = RequireProfile(UserProfileType.Interno);

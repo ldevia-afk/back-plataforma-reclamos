@@ -52,6 +52,18 @@ public class ClientFormViewModel
     public string? NewBranchName { get; set; }
 }
 
+public class BranchListItemViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public int ClientId { get; set; }
+    public string ClientName { get; set; } = string.Empty;
+    public string ClientCode { get; set; } = string.Empty;
+    public string CountryName { get; set; } = string.Empty;
+}
+
 public class ClientImportResultViewModel
 {
     public bool HasRun { get; set; }

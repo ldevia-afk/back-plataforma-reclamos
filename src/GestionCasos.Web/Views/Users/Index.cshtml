@@ -9,7 +9,8 @@
 <a class="gc-btn" asp-controller="Users" asp-action="Create" style="margin-bottom:16px;display:inline-block;">Nuevo usuario</a>
 
 <div class="gc-form-group" style="max-width:360px;">
-    <input id="user-search" class="gc-input" type="search" placeholder="Buscar por nombre, email, país, alcance o grupo..." />
+    <input class="gc-input" type="search" placeholder="Buscar por nombre, email, país, alcance o grupo..."
+           data-live-search-for="users-table" data-no-results-for="no-results-hint" />
 </div>
 
 <div class="gc-card">
@@ -66,22 +67,3 @@
     </table>
     <p id="no-results-hint" class="gc-hint" hidden>Ningún usuario coincide con la búsqueda.</p>
 </div>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var input = document.getElementById("user-search");
-        var rows = document.querySelectorAll("#users-table tbody tr");
-        var noResults = document.getElementById("no-results-hint");
-
-        input.addEventListener("input", function () {
-            var query = input.value.trim().toLowerCase();
-            var visibleCount = 0;
-            rows.forEach(function (row) {
-                var match = row.getAttribute("data-search").indexOf(query) !== -1;
-                row.hidden = !match;
-                if (match) visibleCount++;
-            });
-            noResults.hidden = visibleCount !== 0;
-        });
-    });
-</script>
