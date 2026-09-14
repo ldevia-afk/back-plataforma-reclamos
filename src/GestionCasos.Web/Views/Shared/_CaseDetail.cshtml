@@ -68,29 +68,32 @@ else if (Model.Status == CaseStatus.Resuelto && !Model.CanManage)
     </div>
 }
 
-<div class="gc-card">
-    <div class="gc-card-title">Historial del caso</div>
-    <ul class="gc-timeline">
-        @foreach (var h in Model.History)
-        {
-            <li>
-                <strong>@h.Title</strong> — @h.OccurredAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                @if (h.ChangedByName != null)
-                {
-                    <text> · @h.ChangedByName</text>
-                    if (h.ChangedByGroupNames != null)
+@if (Model.CanManage)
+{
+    <div class="gc-card">
+        <div class="gc-card-title">Historial del caso</div>
+        <ul class="gc-timeline">
+            @foreach (var h in Model.History)
+            {
+                <li>
+                    <strong>@h.Title</strong> — @h.OccurredAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    @if (h.ChangedByName != null)
                     {
-                        <text> (@h.ChangedByGroupNames)</text>
+                        <text> · @h.ChangedByName</text>
+                        if (h.ChangedByGroupNames != null)
+                        {
+                            <text> (@h.ChangedByGroupNames)</text>
+                        }
                     }
-                }
-                @if (!string.IsNullOrWhiteSpace(h.Comment))
-                {
-                    <div class="gc-hint">"@h.Comment"</div>
-                }
-            </li>
-        }
-    </ul>
-</div>
+                    @if (!string.IsNullOrWhiteSpace(h.Comment))
+                    {
+                        <div class="gc-hint">"@h.Comment"</div>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+}
 
 @if (Model.CanManage)
 {

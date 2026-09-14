@@ -236,6 +236,9 @@ h2 { font-size: 18px; }
 .gc-btn-danger { background: #b3261e; }
 .gc-btn-danger:hover { background: #8f1e18; }
 
+.gc-btn-success { background: var(--gc-success-text); }
+.gc-btn-success:hover { background: #17672b; }
+
 .field-validation-error { color: var(--gc-error-text); font-size: 12px; display: block; margin-top: 4px; }
 .validation-summary-errors { color: var(--gc-error-text); background: var(--gc-error-bg); padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
 .validation-summary-errors ul { margin: 0; padding-left: 18px; }
