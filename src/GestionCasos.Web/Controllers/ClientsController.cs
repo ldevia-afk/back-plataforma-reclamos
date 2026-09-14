@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GestionCasos.Web.Controllers;
 
-/// <summary>ABM de clientes y sus sucursales/puntos (perfil Interno).</summary>
+/// <summary>ABM de clientes y sus sucursales/puntos (perfiles Administrador / Administrador de país).</summary>
 public class ClientsController : GestionCasosControllerBase
 {
     private readonly ICatalogService _catalogService;
@@ -16,20 +16,24 @@ public class ClientsController : GestionCasosControllerBase
         _catalogService = catalogService;
     }
 
-    public IActionResult Index(string? q, int? page, int? pageSize)
+    public IActionResult Index(string? q, int? filterCountryId, int? page, int? pageSize)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
+        var countryScope = ManagementCountryScope;
+        // Administrador de país: el filtro de país queda fijo en el suyo, sin importar lo que llegue por query string.
+        var effectiveCountryId = countryScope ?? filterCountryId;
+
         var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
-        var items = _catalogService.GetClients()
+        var items = _catalogService.GetClients(effectiveCountryId)
             .Select(c => new ClientListItemViewModel
             {
                 Id = c.Id,
                 ExternalCode = c.ExternalCode,
                 Name = c.Name,
                 CountryName = countryNames.TryGetValue(c.CountryId, out var cn) ? cn : string.Empty,
-                BranchCount = _catalogService.GetBranches(clientId: c.Id).Count
+                BranchCount = _catalogService.GetBranches(clientId: c.Id, includeInactive: true).Count
             })
             .AsEnumerable();
 
@@ -41,19 +45,29 @@ public class ClientsController : GestionCasosControllerBase
                 c.CountryName.Contains(q, StringComparison.OrdinalIgnoreCase));
         }
 
-        var vm = new ClientListViewModel { Q = q, Paging = items.ToPagedResult(page, pageSize) };
+        var vm = new ClientListViewModel
+        {
+            Q = q,
+            FilterCountryId = effectiveCountryId,
+            CanChooseCountry = countryScope == null,
+            AvailableCountries = _catalogService.GetCountries().Select(c => new CountryOption { Id = c.Id, Name = c.Name }).ToList(),
+            Paging = items.ToPagedResult(page, pageSize)
+        };
         return View(vm);
     }
 
-    public IActionResult Branches(string? q, int? page, int? pageSize)
+    public IActionResult Branches(string? q, int? filterCountryId, int? filterClientId, bool? filterIsActive, int? page, int? pageSize)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var countryScope = ManagementCountryScope;
+        var effectiveCountryId = countryScope ?? filterCountryId;
 
         var clientsById = _catalogService.GetClients().ToDictionary(c => c.Id);
         var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
 
-        var items = _catalogService.GetBranches(includeInactive: true)
+        var items = _catalogService.GetBranches(clientId: filterClientId, countryId: effectiveCountryId, includeInactive: true)
             .Select(b =>
             {
                 clientsById.TryGetValue(b.ClientId, out var client);
@@ -72,6 +86,11 @@ public class ClientsController : GestionCasosControllerBase
             .OrderBy(b => b.ClientName).ThenBy(b => b.Name)
             .AsEnumerable();
 
+        if (filterIsActive.HasValue)
+        {
+            items = items.Where(b => b.IsActive == filterIsActive.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(q))
         {
             items = items.Where(b =>
@@ -83,24 +102,37 @@ public class ClientsController : GestionCasosControllerBase
                 (b.IsActive ? "activa" : "inactiva").Contains(q, StringComparison.OrdinalIgnoreCase));
         }
 
-        var vm = new BranchListViewModel { Q = q, Paging = items.ToPagedResult(page, pageSize) };
+        var vm = new BranchListViewModel
+        {
+            Q = q,
+            FilterCountryId = effectiveCountryId,
+            FilterClientId = filterClientId,
+            FilterIsActive = filterIsActive,
+            CanChooseCountry = countryScope == null,
+            AvailableCountries = _catalogService.GetCountries().Select(c => new CountryOption { Id = c.Id, Name = c.Name }).ToList(),
+            AvailableClients = _catalogService.GetClients(countryScope),
+            Paging = items.ToPagedResult(page, pageSize)
+        };
         return View(vm);
     }
 
     public IActionResult Create()
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
-        return View("Form", BuildFormViewModel(new ClientFormViewModel()));
+        return View("Form", BuildFormViewModel(new ClientFormViewModel { CountryId = ManagementCountryScope }));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Create(ClientFormViewModel model)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        // Administrador de país: el país queda fijo en el suyo, sin importar lo que llegue del formulario.
+        model.CountryId = ManagementCountryScope ?? model.CountryId;
 
         if (model.ExternalCode != null && !_catalogService.IsExternalCodeAvailable(model.ExternalCode.Trim()))
         {
@@ -119,11 +151,11 @@ public class ClientsController : GestionCasosControllerBase
 
     public IActionResult Edit(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         var client = _catalogService.GetClient(id);
-        if (client == null) return NotFound();
+        if (client == null || !InScope(client.CountryId)) return NotFound();
 
         var model = new ClientFormViewModel { Id = client.Id, Name = client.Name, CountryId = client.CountryId, ExternalCode = client.ExternalCode };
         return View("Form", BuildFormViewModel(model));
@@ -133,8 +165,14 @@ public class ClientsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult Edit(ClientFormViewModel model)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var existing = _catalogService.GetClient(model.Id);
+        if (existing == null || !InScope(existing.CountryId)) return NotFound();
+
+        // Administrador de país: el país queda fijo en el suyo, sin importar lo que llegue del formulario.
+        model.CountryId = ManagementCountryScope ?? model.CountryId;
 
         if (model.ExternalCode != null && !_catalogService.IsExternalCodeAvailable(model.ExternalCode.Trim(), model.Id))
         {
@@ -155,8 +193,15 @@ public class ClientsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult Delete(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var client = _catalogService.GetClient(id);
+        if (client == null || !InScope(client.CountryId))
+        {
+            TempData["Error"] = "No tenés acceso a ese cliente.";
+            return RedirectToAction(nameof(Index));
+        }
 
         _catalogService.DeleteClient(id);
         TempData["Success"] = "Cliente eliminado.";
@@ -167,8 +212,11 @@ public class ClientsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult AddBranch(int clientId, string newBranchName, string? newBranchAddress)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var client = _catalogService.GetClient(clientId);
+        if (client == null || !InScope(client.CountryId)) return NotFound();
 
         if (!string.IsNullOrWhiteSpace(newBranchName))
         {
@@ -182,8 +230,11 @@ public class ClientsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult DeactivateBranch(int branchId, int clientId)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var client = _catalogService.GetClient(clientId);
+        if (client == null || !InScope(client.CountryId)) return NotFound();
 
         _catalogService.DeactivateBranch(branchId);
         TempData["Success"] = "Sucursal dada de baja.";
@@ -194,8 +245,11 @@ public class ClientsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult ReactivateBranch(int branchId, int clientId)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var client = _catalogService.GetClient(clientId);
+        if (client == null || !InScope(client.CountryId)) return NotFound();
 
         _catalogService.ReactivateBranch(branchId);
         TempData["Success"] = "Sucursal reactivada.";
@@ -204,7 +258,10 @@ public class ClientsController : GestionCasosControllerBase
 
     private ClientFormViewModel BuildFormViewModel(ClientFormViewModel model)
     {
-        model.AvailableCountries = _catalogService.GetCountries().Select(c => new CountryOption { Id = c.Id, Name = c.Name }).ToList();
+        var countryScope = ManagementCountryScope;
+        model.AvailableCountries = _catalogService.GetCountries()
+            .Where(c => countryScope == null || c.Id == countryScope.Value)
+            .Select(c => new CountryOption { Id = c.Id, Name = c.Name }).ToList();
         if (model.Id != 0)
         {
             model.Branches = _catalogService.GetBranches(clientId: model.Id, includeInactive: true);
@@ -212,10 +269,13 @@ public class ClientsController : GestionCasosControllerBase
         return model;
     }
 
+    /// <summary>True si el país indicado está dentro del alcance de gestión del usuario actual.</summary>
+    private bool InScope(int countryId) => ManagementCountryScope is not { } scope || scope == countryId;
+
     [HttpGet]
     public IActionResult Import()
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         return View(new ClientImportResultViewModel());
@@ -226,7 +286,7 @@ public class ClientsController : GestionCasosControllerBase
     [RequestSizeLimit(10_000_000)]
     public IActionResult Import(IFormFile? file)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         var result = new ClientImportResultViewModel { HasRun = true };
@@ -278,6 +338,7 @@ public class ClientsController : GestionCasosControllerBase
     private void ImportClientes(IXLWorksheet sheet, ClientImportResultViewModel result)
     {
         var countries = _catalogService.GetCountries();
+        var countryScope = ManagementCountryScope;
 
         foreach (var row in sheet.RowsUsed().Skip(1))
         {
@@ -302,9 +363,20 @@ public class ClientsController : GestionCasosControllerBase
                 continue;
             }
 
+            if (countryScope.HasValue && country.Id != countryScope.Value)
+            {
+                result.Errors.Add($"Clientes, fila {row.RowNumber()}: no tenés permiso para dar de alta clientes en \"{countryText}\".");
+                continue;
+            }
+
             var existing = _catalogService.GetClientByExternalCode(code);
             if (existing != null)
             {
+                if (countryScope.HasValue && existing.CountryId != countryScope.Value)
+                {
+                    result.Errors.Add($"Clientes, fila {row.RowNumber()}: no tenés permiso para modificar el cliente \"{code}\".");
+                    continue;
+                }
                 _catalogService.UpdateClient(existing.Id, name, country.Id, code);
                 result.ClientsUpdated++;
             }
@@ -318,6 +390,8 @@ public class ClientsController : GestionCasosControllerBase
 
     private void ImportSucursales(IXLWorksheet sheet, ClientImportResultViewModel result)
     {
+        var countryScope = ManagementCountryScope;
+
         foreach (var row in sheet.RowsUsed().Skip(1))
         {
             var clientCode = row.Cell(1).GetString().Trim();
@@ -339,6 +413,12 @@ public class ClientsController : GestionCasosControllerBase
                 continue;
             }
 
+            if (countryScope.HasValue && client.CountryId != countryScope.Value)
+            {
+                result.Errors.Add($"Sucursales, fila {row.RowNumber()}: no tenés permiso para modificar sucursales del cliente \"{clientCode}\".");
+                continue;
+            }
+
             var existingBranch = _catalogService.GetBranches(clientId: client.Id, includeInactive: true)
                 .FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (existingBranch != null)
@@ -357,7 +437,7 @@ public class ClientsController : GestionCasosControllerBase
     [HttpGet]
     public IActionResult DownloadTemplate()
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         using var workbook = new XLWorkbook();

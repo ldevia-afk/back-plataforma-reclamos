@@ -16,7 +16,7 @@ public class MetricsController : GestionCasosControllerBase
 
     public IActionResult Index(int? selectedCountryId, CaseType? selectedType, int? selectedCategoryId)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         return View(_metricsService.BuildMetrics(selectedCountryId, selectedType, selectedCategoryId));

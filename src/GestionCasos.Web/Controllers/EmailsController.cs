@@ -26,7 +26,7 @@ public class EmailsController : GestionCasosControllerBase
 
     public IActionResult Index(string? q, int? page, int? pageSize)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         var user = CurrentUser!;

@@ -17,7 +17,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
 
     public IActionResult Index(string? q, int? page, int? pageSize)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
@@ -45,7 +45,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
 
     public IActionResult Create()
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         return View("Form", BuildFormViewModel(new ResolverGroupFormViewModel { CountryId = CurrentUser!.CountryId }));
@@ -55,7 +55,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult Create(ResolverGroupFormViewModel model)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         if (!ModelState.IsValid)
@@ -70,7 +70,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
 
     public IActionResult Edit(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         var group = _catalogService.GetResolverGroup(id);
@@ -91,7 +91,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult Edit(ResolverGroupFormViewModel model)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         if (!ModelState.IsValid)
@@ -108,7 +108,7 @@ public class ResolverGroupsController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult Delete(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         _catalogService.DeleteResolverGroup(id);

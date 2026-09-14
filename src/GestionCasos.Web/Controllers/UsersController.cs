@@ -17,10 +17,11 @@ public class UsersController : GestionCasosControllerBase
 
     public IActionResult Index(string? q, int? page, int? pageSize)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
-        var users = _catalogService.GetUsers(includeInactive: true);
+        var countryScope = ManagementCountryScope;
+        var users = _catalogService.GetUsers(includeInactive: true, countryId: countryScope);
         var clients = _catalogService.GetClients();
         var groups = _catalogService.GetResolverGroups();
         var countryNames = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name);
@@ -57,11 +58,11 @@ public class UsersController : GestionCasosControllerBase
 
     public IActionResult Details(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         var user = _catalogService.GetUser(id);
-        if (user == null) return NotFound();
+        if (user == null || !InScope(user.CountryId)) return NotFound();
 
         var vm = new UserDetailViewModel
         {
@@ -91,22 +92,24 @@ public class UsersController : GestionCasosControllerBase
 
     public IActionResult Create()
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
-        return View("Form", BuildFormViewModel(new UserFormViewModel(), null));
+        return View("Form", BuildFormViewModel(new UserFormViewModel { CountryId = ManagementCountryScope }));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Create(UserFormViewModel model)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        ApplyScopeAndValidateProfile(model);
 
         if (!ModelState.IsValid)
         {
-            return View("Form", BuildFormViewModel(model, model.CountryId));
+            return View("Form", BuildFormViewModel(model));
         }
 
         _catalogService.CreateUser(MapToUser(model));
@@ -116,11 +119,11 @@ public class UsersController : GestionCasosControllerBase
 
     public IActionResult Edit(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
 
         var user = _catalogService.GetUser(id);
-        if (user == null) return NotFound();
+        if (user == null || !InScope(user.CountryId)) return NotFound();
 
         var model = new UserFormViewModel
         {
@@ -134,19 +137,24 @@ public class UsersController : GestionCasosControllerBase
             AssignedBranchIds = user.AssignedBranchIds,
             ResolverGroupIds = user.ResolverGroupIds
         };
-        return View("Form", BuildFormViewModel(model, user.CountryId));
+        return View("Form", BuildFormViewModel(model));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Edit(UserFormViewModel model)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var existing = _catalogService.GetUser(model.Id);
+        if (existing == null || !InScope(existing.CountryId)) return NotFound();
+
+        ApplyScopeAndValidateProfile(model);
 
         if (!ModelState.IsValid)
         {
-            return View("Form", BuildFormViewModel(model, model.CountryId));
+            return View("Form", BuildFormViewModel(model));
         }
 
         _catalogService.UpdateUser(MapToUser(model));
@@ -158,8 +166,11 @@ public class UsersController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult Deactivate(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var user = _catalogService.GetUser(id);
+        if (user == null || !InScope(user.CountryId)) return NotFound();
 
         _catalogService.DeactivateUser(id);
         TempData["Success"] = "Usuario dado de baja. Se desasoció de sus grupos resolutores.";
@@ -170,12 +181,35 @@ public class UsersController : GestionCasosControllerBase
     [ValidateAntiForgeryToken]
     public IActionResult Reactivate(int id)
     {
-        var guard = RequireProfile(UserProfileType.Interno);
+        var guard = RequireAnyProfile(UserProfileType.Administrador, UserProfileType.AdministradorPais);
         if (guard != null) return guard;
+
+        var user = _catalogService.GetUser(id);
+        if (user == null || !InScope(user.CountryId)) return NotFound();
 
         _catalogService.ReactivateUser(id);
         TempData["Success"] = "Usuario reactivado.";
         return RedirectToAction(nameof(Index));
+    }
+
+    /// <summary>True si el país indicado está dentro del alcance de gestión del usuario actual.</summary>
+    private bool InScope(int countryId) => ManagementCountryScope is not { } scope || scope == countryId;
+
+    /// <summary>
+    /// Un Administrador de país no puede elegir otro país ni asignar perfiles de administrador
+    /// (evita que se auto-otorgue o le otorgue a otro más permisos de los que tiene).
+    /// </summary>
+    private void ApplyScopeAndValidateProfile(UserFormViewModel model)
+    {
+        var scope = ManagementCountryScope;
+        if (scope.HasValue)
+        {
+            model.CountryId = scope.Value;
+            if (model.ProfileType is UserProfileType.Administrador or UserProfileType.AdministradorPais)
+            {
+                ModelState.AddModelError(nameof(model.ProfileType), "No tenés permiso para asignar ese perfil.");
+            }
+        }
     }
 
     private static AppUser MapToUser(UserFormViewModel model) => new()
@@ -191,12 +225,18 @@ public class UsersController : GestionCasosControllerBase
         ResolverGroupIds = model.ProfileType == UserProfileType.Interno ? model.ResolverGroupIds : new List<int>()
     };
 
-    private UserFormViewModel BuildFormViewModel(UserFormViewModel model, int? countryId)
+    private UserFormViewModel BuildFormViewModel(UserFormViewModel model)
     {
-        model.AvailableCountries = _catalogService.GetCountries().Select(c => new CountryOption { Id = c.Id, Name = c.Name }).ToList();
-        model.AvailableClients = _catalogService.GetClients();
-        model.AvailableBranches = _catalogService.GetBranches();
-        model.AvailableResolverGroups = _catalogService.GetResolverGroups();
+        var countryScope = ManagementCountryScope;
+        model.AvailableCountries = _catalogService.GetCountries()
+            .Where(c => countryScope == null || c.Id == countryScope.Value)
+            .Select(c => new CountryOption { Id = c.Id, Name = c.Name }).ToList();
+        model.AvailableClients = _catalogService.GetClients(countryScope);
+        model.AvailableBranches = _catalogService.GetBranches(countryId: countryScope);
+        model.AvailableResolverGroups = _catalogService.GetResolverGroups(countryScope);
+        model.AvailableProfileTypes = countryScope == null
+            ? new List<UserProfileType> { UserProfileType.Cliente, UserProfileType.Interno, UserProfileType.Administrador, UserProfileType.AdministradorPais }
+            : new List<UserProfileType> { UserProfileType.Cliente, UserProfileType.Interno };
         return model;
     }
 }

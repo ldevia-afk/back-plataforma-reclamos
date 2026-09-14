@@ -160,9 +160,14 @@ public class CatalogService : ICatalogService
         }
     }
 
-    public List<Category> GetCategories()
+    public List<Category> GetCategories(int? countryId = null)
     {
-        lock (_store.Lock) return _store.Categories.OrderBy(c => c.Name).ToList();
+        lock (_store.Lock)
+        {
+            var query = _store.Categories.AsEnumerable();
+            if (countryId.HasValue) query = query.Where(c => c.CountryId == countryId.Value);
+            return query.OrderBy(c => c.Name).ToList();
+        }
     }
 
     public Category? GetCategory(int id)
@@ -170,11 +175,11 @@ public class CatalogService : ICatalogService
         lock (_store.Lock) return _store.Categories.FirstOrDefault(c => c.Id == id);
     }
 
-    public Category CreateCategory(string name)
+    public Category CreateCategory(string name, int countryId)
     {
         lock (_store.Lock)
         {
-            var category = new Category { Id = _store.NextCategoryId(), Name = name };
+            var category = new Category { Id = _store.NextCategoryId(), Name = name, CountryId = countryId };
             _store.Categories.Add(category);
             return category;
         }

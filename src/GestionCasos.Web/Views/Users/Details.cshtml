@@ -8,7 +8,7 @@
 <div class="gc-card">
     <table class="gc-table">
         <tr><th style="width:180px;">Email</th><td>@Model.Email</td></tr>
-        <tr><th>Perfil</th><td>@(Model.ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno")</td></tr>
+        <tr><th>Perfil</th><td>@Model.ProfileType.ToDisplayName()</td></tr>
         <tr><th>País</th><td>@Model.CountryName</td></tr>
         <tr><th>Estado</th><td><span class="gc-status @(Model.IsActive ? "gc-status-Resuelto" : "gc-status-Inicial")">@(Model.IsActive ? "Activo" : "Inactivo")</span></td></tr>
         @if (Model.ProfileType == UserProfileType.Cliente)

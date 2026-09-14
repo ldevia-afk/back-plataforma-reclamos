@@ -28,12 +28,27 @@ public class CategoryFormViewModel
     [Required(ErrorMessage = "Ingresá un nombre.")]
     [StringLength(80)]
     public string Name { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Seleccioná el país.")]
+    public int? CountryId { get; set; }
+
+    public List<CountryOption> AvailableCountries { get; set; } = new();
+}
+
+public class CategoryListItemViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string CountryName { get; set; } = string.Empty;
 }
 
 public class CategoryListViewModel
 {
     public string? Q { get; set; }
-    public PagedResult<Category> Paging { get; set; } = new();
+    public PagedResult<CategoryListItemViewModel> Paging { get; set; } = new();
+    public CategoryFormViewModel Form { get; set; } = new();
+    /// <summary>False cuando el país queda fijo (Administrador de país): el selector no se muestra.</summary>
+    public bool CanChooseCountry { get; set; }
 }
 
 public class ResolverGroupListItemViewModel
@@ -88,6 +103,13 @@ public class BranchListItemViewModel
 public class BranchListViewModel
 {
     public string? Q { get; set; }
+    public int? FilterCountryId { get; set; }
+    public int? FilterClientId { get; set; }
+    public bool? FilterIsActive { get; set; }
+    public List<CountryOption> AvailableCountries { get; set; } = new();
+    public List<Client> AvailableClients { get; set; } = new();
+    /// <summary>False cuando el país queda fijo (Administrador de país): el selector no se muestra.</summary>
+    public bool CanChooseCountry { get; set; }
     public PagedResult<BranchListItemViewModel> Paging { get; set; } = new();
 }
 
@@ -103,6 +125,10 @@ public class ClientListItemViewModel
 public class ClientListViewModel
 {
     public string? Q { get; set; }
+    public int? FilterCountryId { get; set; }
+    public List<CountryOption> AvailableCountries { get; set; } = new();
+    /// <summary>False cuando el país queda fijo (Administrador de país): el selector no se muestra.</summary>
+    public bool CanChooseCountry { get; set; }
     public PagedResult<ClientListItemViewModel> Paging { get; set; } = new();
 }
 
@@ -146,6 +172,8 @@ public class UserFormViewModel
     public List<Client> AvailableClients { get; set; } = new();
     public List<Branch> AvailableBranches { get; set; } = new();
     public List<ResolverGroup> AvailableResolverGroups { get; set; } = new();
+    /// <summary>Perfiles que quien está dando de alta/editando puede asignar (un Administrador de país no puede crear otros administradores).</summary>
+    public List<UserProfileType> AvailableProfileTypes { get; set; } = new();
 }
 
 public class UserListItemViewModel
@@ -154,7 +182,7 @@ public class UserListItemViewModel
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public UserProfileType ProfileType { get; set; }
-    public string ProfileDisplay => ProfileType == UserProfileType.Cliente ? "Cliente" : "Interno";
+    public string ProfileDisplay => ProfileType.ToDisplayName();
     public string CountryName { get; set; } = string.Empty;
     public string ScopeDisplay { get; set; } = string.Empty;
     public string GroupNames { get; set; } = string.Empty;
@@ -171,6 +199,7 @@ public class SwitchUserViewModel
 {
     public List<AppUser> ClientUsers { get; set; } = new();
     public List<AppUser> InternalUsers { get; set; } = new();
+    public List<AppUser> AdminUsers { get; set; } = new();
     public Dictionary<int, string> CountryNamesById { get; set; } = new();
 }
 

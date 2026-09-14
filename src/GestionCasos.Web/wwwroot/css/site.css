@@ -253,6 +253,22 @@ h2 { font-size: 18px; }
 }
 .gc-table th { color: var(--gc-text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
 
+/* Ancho de columnas ajustable arrastrando el borde derecho de cada encabezado. */
+.gc-table-wrapper { overflow-x: auto; max-width: 100%; }
+.gc-col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 1;
+}
+.gc-col-resize-handle:hover,
+.gc-col-resize-handle.gc-resizing {
+    background: rgba(11, 94, 215, 0.35);
+}
+
 /* --- Status badges --- */
 .gc-status {
     display: inline-block;

@@ -24,7 +24,8 @@
 
         <div class="gc-form-group">
             <label class="gc-label">Perfil</label>
-            <select id="profile-select" asp-for="ProfileType" class="gc-select" asp-items="Html.GetEnumSelectList<UserProfileType>()">
+            <select id="profile-select" asp-for="ProfileType" class="gc-select"
+                    asp-items="Model.AvailableProfileTypes.Select(p => new SelectListItem(p.ToDisplayName(), ((int)p).ToString()))">
                 <option value="">-- Seleccioná --</option>
             </select>
             <span asp-validation-for="ProfileType" class="field-validation-error"></span>
@@ -101,9 +102,10 @@
         var branchesPicker = document.getElementById("branches-picker");
 
         function refreshProfileSections() {
-            var isCliente = profileSelect.value === "0"; // UserProfileType.Cliente = 0
-            sectionCliente.hidden = !isCliente;
-            sectionInterno.hidden = isCliente;
+            // UserProfileType: Cliente = 0, Interno = 1, Administrador = 2, AdministradorPais = 3.
+            // Los perfiles administradores no necesitan clientes ni sucursales/grupos asignados.
+            sectionCliente.hidden = profileSelect.value !== "0";
+            sectionInterno.hidden = profileSelect.value !== "1";
         }
 
         function refreshCountryVisibility() {

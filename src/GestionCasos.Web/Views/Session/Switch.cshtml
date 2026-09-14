@@ -50,6 +50,25 @@
                 </form>
             }
         </div>
+
+        <h2 style="margin-top:30px;">Administradores</h2>
+        <div class="gc-user-picker-grid">
+            @foreach (var user in Model.AdminUsers)
+            {
+                <form asp-controller="Session" asp-action="SetUser" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="userId" value="@user.Id" />
+                    <button type="submit" class="gc-user-picker-card">
+                        <div class="gc-user-picker-name">@user.Name</div>
+                        <div class="gc-user-picker-meta">@user.Email</div>
+                        <div class="gc-user-picker-meta">
+                            @user.ProfileType.ToDisplayName()
+                            @(user.ProfileType == UserProfileType.AdministradorPais ? " · " + Model.CountryNamesById[user.CountryId] : " · Todos los países")
+                        </div>
+                    </button>
+                </form>
+            }
+        </div>
     </div>
 </body>
 </html>

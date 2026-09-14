@@ -66,4 +66,61 @@
             }, delay);
         });
     });
+
+    // --- Columnas de las tablas de resultados: se pueden ampliar/reducir arrastrando
+    // el borde derecho de cada encabezado. Si la tabla vive dentro de un modal, el
+    // modal también se agranda para que la columna redimensionada entre sin recortarse. ---
+    document.querySelectorAll("table.gc-table").forEach(function (table) {
+        var headers = Array.from(table.querySelectorAll("thead th"));
+        if (headers.length < 2) return;
+
+        if (!table.parentElement.classList.contains("gc-table-wrapper")) {
+            var wrapper = document.createElement("div");
+            wrapper.className = "gc-table-wrapper";
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        }
+
+        headers.forEach(function (th) {
+            th.style.position = "relative";
+            var handle = document.createElement("span");
+            handle.className = "gc-col-resize-handle";
+            th.appendChild(handle);
+
+            handle.addEventListener("mousedown", function (e) {
+                e.preventDefault();
+                // Al primer arrastre "congelamos" el ancho actual de cada columna (para que
+                // el resto no salte) y recién ahí pasamos la tabla a table-layout: fixed.
+                if (table.style.tableLayout !== "fixed") {
+                    headers.forEach(function (h) { h.style.width = h.offsetWidth + "px"; });
+                    table.style.tableLayout = "fixed";
+                }
+
+                var startX = e.pageX;
+                var startWidth = th.offsetWidth;
+                handle.classList.add("gc-resizing");
+                document.body.style.userSelect = "none";
+
+                function onMove(ev) {
+                    th.style.width = Math.max(50, startWidth + (ev.pageX - startX)) + "px";
+
+                    var modalBox = table.closest(".gc-modal");
+                    if (modalBox) {
+                        var needed = table.scrollWidth + 56;
+                        if (needed > modalBox.getBoundingClientRect().width) {
+                            modalBox.style.maxWidth = needed + "px";
+                        }
+                    }
+                }
+                function onUp() {
+                    handle.classList.remove("gc-resizing");
+                    document.body.style.userSelect = "";
+                    document.removeEventListener("mousemove", onMove);
+                    document.removeEventListener("mouseup", onUp);
+                }
+                document.addEventListener("mousemove", onMove);
+                document.addEventListener("mouseup", onUp);
+            });
+        });
+    });
 })();

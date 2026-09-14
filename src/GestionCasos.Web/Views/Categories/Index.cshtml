@@ -17,24 +17,38 @@
             <label class="gc-label">Nombre</label>
             <input class="gc-input" name="Name" placeholder="Ej: Sin movimiento causa cliente" required />
         </div>
+        @if (Model.CanChooseCountry)
+        {
+            <div class="gc-form-group">
+                <label class="gc-label">País</label>
+                <select name="CountryId" class="gc-select" asp-items="Model.Form.AvailableCountries.Select(c => new SelectListItem(c.Name, c.Id.ToString()))">
+                    <option value="">-- Seleccioná --</option>
+                </select>
+            </div>
+        }
+        else
+        {
+            <input type="hidden" name="CountryId" value="@Model.Form.CountryId" />
+        }
         <button type="submit" class="gc-btn">Agregar</button>
     </form>
 </div>
 
 <form method="get" class="gc-form-group" style="max-width:360px;">
     <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
-    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por nombre..."
+    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por nombre o país..."
            data-debounce-submit="400" />
 </form>
 
 <div class="gc-card">
     <table class="gc-table">
-        <thead><tr><th>Nombre</th><th></th></tr></thead>
+        <thead><tr><th>Nombre</th><th>País</th><th></th></tr></thead>
         <tbody>
             @foreach (var category in Model.Paging.Items)
             {
                 <tr>
                     <td>@category.Name</td>
+                    <td>@category.CountryName</td>
                     <td>
                         <form asp-controller="Categories" asp-action="Delete" asp-route-id="@category.Id" method="post" class="gc-inline-form">
                             @Html.AntiForgeryToken()
@@ -45,7 +59,7 @@
             }
             @if (Model.Paging.Items.Count == 0)
             {
-                <tr><td colspan="2" class="gc-hint">Ninguna categoría coincide con la búsqueda.</td></tr>
+                <tr><td colspan="3" class="gc-hint">Ninguna categoría coincide con la búsqueda.</td></tr>
             }
         </tbody>
     </table>

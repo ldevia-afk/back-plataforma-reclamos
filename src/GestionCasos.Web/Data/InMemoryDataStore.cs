@@ -52,11 +52,12 @@ public class InMemoryDataStore
         Countries.Add(new Country { Id = chileId, Name = "Chile", Code = "CL" });
         Countries.Add(new Country { Id = argentinaId, Name = "Argentina", Code = "AR" });
 
-        // --- Categorías internas (las asigna el perfil interno luego de recibir el caso) ---
-        var catSinMovimientoCliente = new Category { Id = _nextCategoryId++, Name = "Sin movimiento causa cliente" };
-        var catInsumosNoEnviados = new Category { Id = _nextCategoryId++, Name = "No se enviaron los insumos" };
-        var catFallaTecnica = new Category { Id = _nextCategoryId++, Name = "Falla técnica del equipo" };
-        Categories.AddRange(new[] { catSinMovimientoCliente, catInsumosNoEnviados, catFallaTecnica });
+        // --- Categorías internas (las asigna el perfil interno luego de recibir el caso; una por país) ---
+        var catSinMovimientoCliente = new Category { Id = _nextCategoryId++, Name = "Sin movimiento causa cliente", CountryId = argentinaId };
+        var catInsumosNoEnviados = new Category { Id = _nextCategoryId++, Name = "No se enviaron los insumos", CountryId = argentinaId };
+        var catFallaTecnica = new Category { Id = _nextCategoryId++, Name = "Falla técnica del equipo", CountryId = chileId };
+        var catRetrasoEntrega = new Category { Id = _nextCategoryId++, Name = "Retraso en la entrega", CountryId = chileId };
+        Categories.AddRange(new[] { catSinMovimientoCliente, catInsumosNoEnviados, catFallaTecnica, catRetrasoEntrega });
 
         // --- Clientes ---
         var lider = new Client { Id = _nextClientId++, Name = "Supermercados Líder", CountryId = chileId, ExternalCode = "1001" };
@@ -152,7 +153,29 @@ public class InMemoryDataStore
         mesaAyudaAr.MemberUserIds.Add(internoAr1.Id);
         seguridadAr.MemberUserIds.Add(internoAr2.Id);
 
-        Users.AddRange(new[] { clienteCl1, clienteCl2, clienteAr1, clienteAr2, internoCl1, internoCl2, internoAr1, internoAr2 });
+        // --- Administradores: uno global (ve/gestiona todos los países) y uno por país
+        // (ve/gestiona todo, pero sólo dentro de su propio país). ---
+        var adminGlobal = new AppUser
+        {
+            Id = _nextUserId++, Name = "Valentina Castro", Email = "valentina.castro@empresa.com",
+            ProfileType = UserProfileType.Administrador, CountryId = chileId
+        };
+        var adminPaisCl = new AppUser
+        {
+            Id = _nextUserId++, Name = "Rodrigo Fuentes", Email = "rodrigo.fuentes@empresa.cl",
+            ProfileType = UserProfileType.AdministradorPais, CountryId = chileId
+        };
+        var adminPaisAr = new AppUser
+        {
+            Id = _nextUserId++, Name = "Agustina López", Email = "agustina.lopez@empresa.com.ar",
+            ProfileType = UserProfileType.AdministradorPais, CountryId = argentinaId
+        };
+
+        Users.AddRange(new[]
+        {
+            clienteCl1, clienteCl2, clienteAr1, clienteAr2, internoCl1, internoCl2, internoAr1, internoAr2,
+            adminGlobal, adminPaisCl, adminPaisAr
+        });
 
         // --- Casos de ejemplo (para poder ver la bandeja y las métricas con datos) ---
         var now = DateTime.UtcNow;

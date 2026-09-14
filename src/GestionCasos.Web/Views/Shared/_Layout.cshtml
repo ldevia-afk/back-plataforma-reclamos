@@ -33,7 +33,11 @@
                     </a>
                 }
 
-                @if (currentUser?.ProfileType == UserProfileType.Interno)
+                @{
+                    var isInternalStaff = currentUser != null && currentUser.ProfileType.IsInternalStaff();
+                    var isAdmin = currentUser != null && currentUser.ProfileType.IsAdmin();
+                }
+                @if (isInternalStaff)
                 {
                     <div class="gc-nav-section">Gestión</div>
                     <a class="gc-nav-link" asp-controller="InternalCases" asp-action="Index">
@@ -45,13 +49,16 @@
                     <a class="gc-nav-link" asp-controller="Emails" asp-action="Index">
                         <span class="gc-nav-icon">📧</span> Emails enviados
                     </a>
+                    <a class="gc-nav-link" asp-controller="ResolverGroups" asp-action="Index">
+                        <span class="gc-nav-icon">👥</span> Grupos resolutores
+                    </a>
+                }
 
+                @if (isAdmin)
+                {
                     <div class="gc-nav-section">Configuración</div>
                     <a class="gc-nav-link" asp-controller="Categories" asp-action="Index">
                         <span class="gc-nav-icon">🏷️</span> Categorías
-                    </a>
-                    <a class="gc-nav-link" asp-controller="ResolverGroups" asp-action="Index">
-                        <span class="gc-nav-icon">👥</span> Grupos resolutores
                     </a>
                     <a class="gc-nav-link" asp-controller="Clients" asp-action="Index">
                         <span class="gc-nav-icon">🏢</span> Clientes y sucursales

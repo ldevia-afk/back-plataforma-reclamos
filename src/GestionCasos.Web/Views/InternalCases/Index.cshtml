@@ -5,6 +5,12 @@
 }
 <h1>Bandeja de casos</h1>
 
+<a class="gc-btn gc-btn-secondary" style="margin-bottom:16px;display:inline-block;"
+   href="@Url.Action("ExportXlsx", new { q = Model.Q, filterType = Model.FilterType, filterCategoryId = Model.FilterCategoryId, filterStatus = Model.FilterStatus, filterGroupId = Model.FilterGroupId, dateFrom = Model.DateFrom, dateTo = Model.DateTo })">
+    Exportar a Excel
+</a>
+<p class="gc-hint" style="margin-top:-8px;">Exporta todos los casos visibles con el filtro actualmente aplicado (si no filtrás nada, exporta todos).</p>
+
 <form method="get" class="gc-filters gc-card">
     <input type="hidden" name="pageSize" value="@(Model.Paging?.PageSize ?? Paging.DefaultPageSize)" />
     <div class="gc-form-group">

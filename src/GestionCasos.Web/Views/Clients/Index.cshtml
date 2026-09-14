@@ -8,10 +8,23 @@
 <a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Branches" style="margin-bottom:16px;display:inline-block;">Ver sucursales</a>
 <a class="gc-btn gc-btn-secondary" asp-controller="Clients" asp-action="Import" style="margin-bottom:16px;display:inline-block;">Importar desde Excel</a>
 
-<form method="get" class="gc-form-group" style="max-width:360px;">
+<form method="get" class="gc-filters gc-card">
     <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
-    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por código, nombre o país..."
-           data-debounce-submit="400" />
+    <div class="gc-form-group">
+        <label class="gc-label">Buscar</label>
+        <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por código, nombre o país..."
+               data-debounce-submit="400" />
+    </div>
+    @if (Model.CanChooseCountry)
+    {
+        <div class="gc-form-group">
+            <label class="gc-label">País</label>
+            <select asp-for="FilterCountryId" class="gc-select" asp-items="Model.AvailableCountries.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
+                <option value="">Todos</option>
+            </select>
+        </div>
+    }
+    <noscript><button type="submit" class="gc-btn">Filtrar</button></noscript>
 </form>
 
 <div class="gc-card">

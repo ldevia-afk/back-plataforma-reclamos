@@ -72,11 +72,25 @@ public class CaseService : ICaseService
     {
         lock (_store.Lock)
         {
-            var query = _store.Cases.Where(c => c.CountryId == user.CountryId);
-            if (!user.HasAllBranches)
+            var query = _store.Cases.AsEnumerable();
+
+            if (user.ProfileType == UserProfileType.Administrador)
             {
-                query = query.Where(c => user.AssignedBranchIds.Contains(c.BranchId));
+                // Ve todos los casos, de todos los países, sin restricción de sucursal.
             }
+            else if (user.ProfileType == UserProfileType.AdministradorPais)
+            {
+                query = query.Where(c => c.CountryId == user.CountryId);
+            }
+            else
+            {
+                query = query.Where(c => c.CountryId == user.CountryId);
+                if (!user.HasAllBranches)
+                {
+                    query = query.Where(c => user.AssignedBranchIds.Contains(c.BranchId));
+                }
+            }
+
             return query.OrderByDescending(c => c.CreatedAtUtc).ToList();
         }
     }

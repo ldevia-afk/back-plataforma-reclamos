@@ -24,6 +24,9 @@ public class SessionController : GestionCasosControllerBase
         {
             ClientUsers = _catalogService.GetUsers(Models.UserProfileType.Cliente),
             InternalUsers = _catalogService.GetUsers(Models.UserProfileType.Interno),
+            AdminUsers = _catalogService.GetUsers()
+                .Where(u => u.ProfileType is Models.UserProfileType.Administrador or Models.UserProfileType.AdministradorPais)
+                .ToList(),
             CountryNamesById = _catalogService.GetCountries().ToDictionary(c => c.Id, c => c.Name)
         };
         return View(vm);

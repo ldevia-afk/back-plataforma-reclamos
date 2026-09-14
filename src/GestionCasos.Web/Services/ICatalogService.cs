@@ -26,9 +26,9 @@ public interface ICatalogService
     void DeactivateBranch(int id);
     void ReactivateBranch(int id);
 
-    List<Category> GetCategories();
+    List<Category> GetCategories(int? countryId = null);
     Category? GetCategory(int id);
-    Category CreateCategory(string name);
+    Category CreateCategory(string name, int countryId);
     void DeleteCategory(int id);
 
     List<ResolverGroup> GetResolverGroups(int? countryId = null);

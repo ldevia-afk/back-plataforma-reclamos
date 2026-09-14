@@ -72,7 +72,7 @@ public static class CasesSharedMapper
                 }).ToList()
                 : new List<ResolverGroupOption>(),
             AvailableCategories = canManage
-                ? catalog.GetCategories().Select(cat => new CategoryOption { Id = cat.Id, Name = cat.Name }).ToList()
+                ? catalog.GetCategories(countryId: c.CountryId).Select(cat => new CategoryOption { Id = cat.Id, Name = cat.Name }).ToList()
                 : new List<CategoryOption>(),
             ResolvedAtUtc = c.History.LastOrDefault(h => h.EventType == CaseEventType.StatusChanged && h.Status == CaseStatus.Resuelto)?.OccurredAtUtc,
             ResolutionComment = c.ResolutionComment,

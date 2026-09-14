@@ -5,10 +5,37 @@
 <a asp-controller="Clients" asp-action="Index">&larr; Volver a Clientes y sucursales</a>
 <h1>Sucursales</h1>
 
-<form method="get" class="gc-form-group" style="max-width:360px;">
+<form method="get" class="gc-filters gc-card">
     <input type="hidden" name="pageSize" value="@Model.Paging.PageSize" />
-    <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por sucursal, cliente, dirección, país o estado..."
-           data-debounce-submit="400" />
+    <div class="gc-form-group">
+        <label class="gc-label">Buscar</label>
+        <input class="gc-input" type="search" name="q" value="@Model.Q" placeholder="Buscar por sucursal, cliente, dirección, país o estado..."
+               data-debounce-submit="400" />
+    </div>
+    @if (Model.CanChooseCountry)
+    {
+        <div class="gc-form-group">
+            <label class="gc-label">País</label>
+            <select asp-for="FilterCountryId" class="gc-select" asp-items="Model.AvailableCountries.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
+                <option value="">Todos</option>
+            </select>
+        </div>
+    }
+    <div class="gc-form-group">
+        <label class="gc-label">Cliente</label>
+        <select asp-for="FilterClientId" class="gc-select" asp-items="Model.AvailableClients.Select(c => new SelectListItem(c.Name, c.Id.ToString()))" onchange="this.form.submit()">
+            <option value="">Todos</option>
+        </select>
+    </div>
+    <div class="gc-form-group">
+        <label class="gc-label">Estado</label>
+        <select name="filterIsActive" class="gc-select" onchange="this.form.submit()">
+            <option value="" selected="@(Model.FilterIsActive == null ? "selected" : null)">Todas</option>
+            <option value="true" selected="@(Model.FilterIsActive == true ? "selected" : null)">Activa</option>
+            <option value="false" selected="@(Model.FilterIsActive == false ? "selected" : null)">Inactiva</option>
+        </select>
+    </div>
+    <noscript><button type="submit" class="gc-btn">Filtrar</button></noscript>
 </form>
 
 <div class="gc-card">
