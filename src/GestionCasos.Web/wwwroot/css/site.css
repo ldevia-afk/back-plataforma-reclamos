@@ -421,6 +421,11 @@ h2 { font-size: 18px; }
     z-index: 100;
     padding: 16px;
 }
+/* Un [hidden] de HTML tiene la misma especificidad que .gc-modal-overlay: sin esta
+   regla, el display:flex de arriba gana y el modal queda visible aunque esté "hidden". */
+.gc-modal-overlay[hidden] {
+    display: none;
+}
 
 .gc-modal {
     background: #fff;
@@ -431,12 +436,30 @@ h2 { font-size: 18px; }
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
+.gc-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .gc-modal-title {
     font-size: 16px;
     font-weight: 700;
     color: var(--gc-blue-dark);
     margin-bottom: 10px;
 }
+
+.gc-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--gc-text-muted);
+    padding: 0 0 0 8px;
+}
+.gc-modal-close:hover { color: var(--gc-text); }
 
 .gc-modal-actions {
     display: flex;

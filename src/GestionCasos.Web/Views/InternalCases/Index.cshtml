@@ -38,11 +38,11 @@
     </div>
     <div class="gc-form-group">
         <label class="gc-label">Registrado desde</label>
-        <input asp-for="DateFrom" class="gc-input" onchange="this.form.submit()" />
+        <input type="date" class="gc-input" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
     </div>
     <div class="gc-form-group">
         <label class="gc-label">Registrado hasta</label>
-        <input asp-for="DateTo" class="gc-input" onchange="this.form.submit()" />
+        <input type="date" class="gc-input" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
     </div>
     <div class="gc-form-group">
         <label class="gc-label">Vista</label>
@@ -102,7 +102,10 @@
 
 <div id="bulk-confirm-modal" class="gc-modal-overlay" hidden>
     <div class="gc-modal">
-        <div class="gc-modal-title">Confirmar actualización masiva</div>
+        <div class="gc-modal-header">
+            <div class="gc-modal-title">Confirmar actualización masiva</div>
+            <button type="button" id="bulk-close-btn" class="gc-modal-close" aria-label="Cerrar">&times;</button>
+        </div>
         <p>Vas a actualizar <strong id="bulk-confirm-count">0</strong> caso(s) a estado <strong id="bulk-confirm-status"></strong>.</p>
         <div class="gc-form-group" id="bulk-comment-group" hidden>
             <label class="gc-label">Comentario de resolución (obligatorio)</label>
@@ -153,6 +156,18 @@
 
         document.getElementById("bulk-cancel-btn").addEventListener("click", function () {
             modal.hidden = true;
+        });
+
+        document.getElementById("bulk-close-btn").addEventListener("click", function () {
+            modal.hidden = true;
+        });
+
+        // Cerrar también haciendo click fuera del cuadro, o con Escape.
+        modal.addEventListener("click", function (e) {
+            if (e.target === modal) modal.hidden = true;
+        });
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape" && !modal.hidden) modal.hidden = true;
         });
 
         document.getElementById("bulk-confirm-btn").addEventListener("click", function () {

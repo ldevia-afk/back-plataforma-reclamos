@@ -15,11 +15,11 @@
     </div>
     <div class="gc-form-group">
         <label class="gc-label">Registrado desde</label>
-        <input asp-for="DateFrom" class="gc-input" onchange="this.form.submit()" />
+        <input type="date" class="gc-input" name="DateFrom" value="@Model.DateFrom?.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
     </div>
     <div class="gc-form-group">
         <label class="gc-label">Registrado hasta</label>
-        <input asp-for="DateTo" class="gc-input" onchange="this.form.submit()" />
+        <input type="date" class="gc-input" name="DateTo" value="@Model.DateTo?.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
     </div>
     <noscript><button type="submit" class="gc-btn">Filtrar</button></noscript>
 </form>
